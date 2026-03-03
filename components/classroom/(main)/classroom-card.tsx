@@ -1,0 +1,358 @@
+'use client';
+
+import { MoreVertical, User, ArrowRight, Pencil, Trash, Globe, Lock, Plus, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import Link from 'next/link';
+import { useState } from 'react';
+import { Button } from "@/components/ui/button"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { cn } from "@/lib/utils"
+
+export type Role = "creator" | "manager" | "member";
+
+export default function ClassCard({ role = "creator" }: { role?: Role }) {
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [name, setName] = useState("ชื่อชั้นเรียน");
+    const [description, setDescription] = useState("คำอธิบายรายวิชา เพื่อให้เห็นภาพรวมเนื้อหาโดยรวม");
+    const [privacy, setPrivacy] = useState("public");
+
+    // Temporary state for editing
+    const [tempName, setTempName] = useState("");
+    const [tempDescription, setTempDescription] = useState("");
+    const [tempPrivacy, setTempPrivacy] = useState("public");
+    const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [deleteStatus, setDeleteStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+    const handleEditClick = () => {
+        setTempName(name);
+        setTempDescription(description);
+        setTempPrivacy(privacy);
+        setStatus('idle');
+        setIsEditOpen(true);
+    };
+
+    const handleOpenChange = (open: boolean) => {
+        setIsEditOpen(open);
+        if (!open) {
+            setTimeout(() => setStatus('idle'), 300);
+        }
+    };
+
+    const handleDeleteClick = () => {
+        setDeleteStatus('idle');
+        setIsDeleteOpen(true);
+    };
+
+    const handleDeleteOpenChange = (open: boolean) => {
+        setIsDeleteOpen(open);
+        if (!open) {
+            setTimeout(() => setDeleteStatus('idle'), 300);
+        }
+    };
+
+    const handleConfirmDelete = () => {
+        setDeleteStatus('loading');
+
+        setTimeout(() => {
+            // จำลองการเกิดข้อผิดพลาดจาก server (ถ้าชื่อมีคำว่า error)
+            if (name.toLowerCase().includes('error')) {
+                setDeleteStatus('error');
+            } else {
+                setDeleteStatus('success');
+            }
+
+            // ปิด popup อัตโนมัติหลังจากแสดงผลลัพธ์
+            setTimeout(() => {
+                handleDeleteOpenChange(false);
+            }, 2000);
+        }, 1500);
+    };
+
+    const handleSave = () => {
+        if (!tempName.trim()) return;
+
+        setStatus('loading');
+
+        setTimeout(() => {
+            // จำลองการเกิดข้อผิดพลาดจาก server (ถ้าชื่อมีคำว่า error)
+            if (tempName.toLowerCase().includes('error')) {
+                setStatus('error');
+            } else {
+                setName(tempName);
+                setDescription(tempDescription);
+                setPrivacy(tempPrivacy);
+                setStatus('success');
+            }
+
+            // ปิด popup อัตโนมัติหลังจากแสดงผลลัพธ์
+            setTimeout(() => {
+                handleOpenChange(false);
+            }, 2000);
+        }, 1500);
+    };
+
+    return (
+        <>
+            <Link href="/classroom/undefined/forum" className="group w-[300px] bg-white rounded-2xl border border-gray-200 p-4 hover:bg-blue-50 hover:border-blue-200 transition-shadow cursor-pointer relative flex gap-4">
+                {/* Context Menu - Absolute Top Right */}
+                {role === "creator" && (
+                    <div
+                        className="absolute top-3 right-2 z-10"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }}
+                    >
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button
+                                    className="text-gray-400 hover:text-blue-600 p-1 rounded-full transition-colors focus:outline-none"
+                                >
+                                    <MoreVertical size={16} />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className='p-2 space-y-1'>
+                                <DropdownMenuItem onClick={handleEditClick} className='transition-colors ease-in-out p-2 text-gray-800 focus:text-blue-600 cursor-pointer border border-transparent focus:bg-blue-50 focus:border-blue-200'>
+                                    <Pencil className=" h-4 w-4 focus:text-blue-600 transition-colors ease-in-out" />
+                                    <span className="">แก้ไข</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleDeleteClick} className='transition-colors ease-in-out p-2 text-gray-800 focus:text-red-600 cursor-pointer border border-transparent focus:bg-red-50 focus:border-red-200'>
+                                    <Trash className=" h-4 w-4 focus:text-red-600 transition-colors ease-in-out" />
+                                    <span className="">ลบ</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                )}
+
+                {/* Left: Image Placeholder (Circle) */}
+                <div className="flex-shrink-0 flex items-center">
+                    <img
+                        src="https://api.dicebear.com/9.x/notionists/svg?backgroundColor=b6e3f4"
+                        alt="Class Avatar"
+                        className="w-20 h-20 rounded-full object-cover border border-gray-100"
+                    />
+                </div>
+
+                {/* Right: Content */}
+                <div className="flex flex-col flex-1 min-w-0 py-1">
+                    {/* Title */}
+                    <h3 className="text-md text-gray-900 leading-tight truncate pr-6">
+                        {name}
+                    </h3>
+
+                    {/* Description */}
+                    <p className="text-xs text-gray-400 mt-1 mb-2 line-clamp-2 overflow-hidden text-ellipsis">
+                        {description}
+                    </p>
+
+                    {/* Footer: User / Teacher */}
+                    <div className="mt-auto flex items-center gap-2">
+                        <User size={14} className="text-gray-900" />
+                        <span className="text-xs font-medium text-gray-900 truncate max-w-[120px]">
+                            ชื่อ นามสกุล
+                        </span>
+                    </div>
+
+                    {/* Action Arrow - Absolute Bottom Right */}
+                    <div className="absolute bottom-4 right-4 text-gray-900 group-hover:translate-x-1 transition-transform group-hover:text-blue-600">
+                        <ArrowRight size={20} />
+                    </div>
+                </div>
+            </Link>
+
+
+            <Dialog open={isEditOpen} onOpenChange={handleOpenChange}>
+                <DialogContent className="sm:max-w-[500px] max-h-[85vh] flex flex-col">
+                    {status === 'idle' && (
+                        <>
+                            <DialogHeader>
+                                <DialogTitle className="text-xl font-semibold text-blue-600">แก้ไขชั้นเรียน</DialogTitle>
+                            </DialogHeader>
+                            <div className="grid gap-6 overflow-y-auto pr-2 py-4">
+                                <div className="grid gap-2">
+                                    <div className="flex justify-between items-center">
+                                        <Label htmlFor="edit-name" className="text-gray-700">
+                                            ชื่อชั้นเรียน <span className="text-red-500">*</span>
+                                        </Label>
+                                        <span className="text-xs text-muted-foreground">{tempName.length}/100</span>
+                                    </div>
+                                    <Input
+                                        id="edit-name"
+                                        value={tempName}
+                                        onChange={(e) => setTempName(e.target.value)}
+                                        placeholder="ระบุชื่อชั้นเรียน..."
+                                        maxLength={100}
+                                        className="bg-gray-50 border-gray-200 focus:bg-white focus-visible:ring-blue-600 transition-colors"
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <div className="flex justify-between items-center">
+                                        <Label htmlFor="edit-description" className="text-gray-700">
+                                            คำอธิบายชั้นเรียน
+                                        </Label>
+                                        <span className="text-xs text-muted-foreground">{tempDescription.length}/200</span>
+                                    </div>
+                                    <Textarea
+                                        id="edit-description"
+                                        value={tempDescription}
+                                        onChange={(e) => setTempDescription(e.target.value)}
+                                        placeholder="พิมพ์คำอธิบายชั้นเรียนที่นี่..."
+                                        maxLength={200}
+                                        className="min-h-[100px] resize-none bg-gray-50 border-gray-200 focus:bg-white focus-visible:ring-blue-600 transition-colors"
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label className="text-gray-700">ความเป็นส่วนตัว</Label>
+                                    <div className="flex gap-3 pt-1">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className={cn(
+                                                "flex-1 justify-center h-auto py-3 border transition-all hover:bg-blue-50 hover:text-blue-700",
+                                                tempPrivacy === "public"
+                                                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                                                    : "border-gray-200 text-gray-600 bg-transparent"
+                                            )}
+                                            onClick={() => setTempPrivacy("public")}
+                                        >
+                                            <div className="flex flex-col items-center gap-1">
+                                                <Globe className="h-5 w-5" />
+                                                <span>สาธารณะ</span>
+                                            </div>
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className={cn(
+                                                "flex-1 justify-center h-auto py-3 border transition-all hover:bg-blue-50 hover:text-blue-700",
+                                                tempPrivacy === "private"
+                                                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                                                    : "border-gray-200 text-gray-600 bg-transparent"
+                                            )}
+                                            onClick={() => setTempPrivacy("private")}
+                                        >
+                                            <div className="flex flex-col items-center gap-1">
+                                                <Lock className="h-5 w-5" />
+                                                <span>ส่วนตัว</span>
+                                            </div>
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                            <DialogFooter className="gap-2 sm:gap-0">
+                                <Button variant="ghost" className="text-gray-500 hover:text-gray-700" onClick={() => handleOpenChange(false)}>
+                                    ยกเลิก
+                                </Button>
+                                <Button
+                                    type="button"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                    disabled={!tempName.trim()}
+                                    onClick={handleSave}
+                                >
+                                    บันทึก
+                                </Button>
+                            </DialogFooter>
+                        </>
+                    )}
+
+                    {status === 'loading' && (
+                        <div className="py-12 flex flex-col items-center justify-center space-y-4">
+                            <Loader2 className="h-10 w-10 text-blue-600 animate-spin" />
+                            <p className="text-gray-600 font-medium">กำลังบันทึก...</p>
+                        </div>
+                    )}
+
+                    {status === 'success' && (
+                        <div className="py-12 flex flex-col items-center justify-center space-y-4">
+                            <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
+                                <CheckCircle className="h-10 w-10 text-green-600" />
+                            </div>
+                            <p className="text-xl text-gray-900">แก้ไขเสร็จสิ้น</p>
+                        </div>
+                    )}
+
+                    {status === 'error' && (
+                        <div className="py-12 flex flex-col items-center justify-center space-y-4">
+                            <div className="h-16 w-16 bg-red-100 rounded-full flex items-center justify-center">
+                                <XCircle className="h-10 w-10 text-red-600" />
+                            </div>
+                            <p className="text-xl text-gray-900">เกิดข้อผิดพลาด</p>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isDeleteOpen} onOpenChange={handleDeleteOpenChange}>
+                <DialogContent className="sm:max-w-[400px]">
+                    {deleteStatus === 'idle' && (
+                        <>
+                            <DialogHeader>
+                                <DialogTitle className="text-xl font-semibold text-red-600">ยืนยันการลบ</DialogTitle>
+                            </DialogHeader>
+                            <div>
+                                <p className="text-gray-700 text-start">
+                                    ต้องการลบชั้นเรียน <span className="font-semibold text-gray-900">{name}</span> ใช่หรือไม่?
+                                </p>
+                            </div>
+                            <DialogFooter className="gap-3 sm:gap-2 flex sm:justify-end">
+                                <Button
+                                    type="button"
+                                    className="bg-red-600 hover:bg-red-700 text-white shadow-sm flex-1 sm:flex-none w-full sm:w-auto"
+                                    onClick={handleConfirmDelete}
+                                >
+                                    ใช่
+                                </Button>
+                                <Button variant="ghost" className="text-gray-500 hover:text-gray-700 flex-1 sm:flex-none w-full sm:w-auto" onClick={() => handleDeleteOpenChange(false)}>
+                                    ไม่ใช่
+                                </Button>
+
+                            </DialogFooter>
+                        </>
+                    )}
+
+                    {deleteStatus === 'loading' && (
+                        <div className="py-12 flex flex-col items-center justify-center space-y-4">
+                            <Loader2 className="h-10 w-10 text-red-600 animate-spin" />
+                            <p className="text-gray-600 font-medium">กำลังลบ...</p>
+                        </div>
+                    )}
+
+                    {deleteStatus === 'success' && (
+                        <div className="py-12 flex flex-col items-center justify-center space-y-4">
+                            <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
+                                <CheckCircle className="h-10 w-10 text-green-600" />
+                            </div>
+                            <p className="text-xl text-gray-900">ลบชั้นเรียนเสร็จสิ้น</p>
+                        </div>
+                    )}
+
+                    {deleteStatus === 'error' && (
+                        <div className="py-12 flex flex-col items-center justify-center space-y-4">
+                            <div className="h-16 w-16 bg-red-100 rounded-full flex items-center justify-center">
+                                <XCircle className="h-10 w-10 text-red-600" />
+                            </div>
+                            <p className="text-xl text-gray-900">เกิดข้อผิดพลาด</p>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+        </>
+    );
+}
