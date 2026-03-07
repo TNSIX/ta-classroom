@@ -5,11 +5,11 @@ import { usePathname, useParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 // กำหนด type สำหรับบทบาท
-export type Role = "creator" | "manager" | "member";
+export type Role = "creator" | "manager" | "student";
 
 const tabs = [
     { name: "รายละเอียด", href: "/assignment_details" },
-    { name: "งานของนักเรียน", href: "/assignment_works", hideFor: ["member"] },
+    { name: "งานของนักเรียน", href: "/assignment_works", hideFor: ["student"] },
 ];
 
 export default function AssignmentHeader({ role = "creator" }: { role?: Role }) {

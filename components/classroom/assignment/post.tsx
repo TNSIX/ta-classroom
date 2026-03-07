@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
 import { useState, useRef } from "react";
+import { editAssignment, deleteAssignment } from "@/app/actions/assignment";
 import {
     Dialog,
     DialogContent,
@@ -24,47 +25,70 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
 interface AssignmentPostProps {
-    classId: string;
+    classroomId: string;
     assignmentId: string;
-    onDelete?: (id: string) => void;
-    role?: "member" | "manager" | "creator"; // เพิ่ม role เพื่อใช้เช็คสิทธิ์
+    initialTitle?: string;
+    initialDescription?: string;
+    dueDate?: string | null;
+    points?: number;
+    createdAt?: string;
+    role?: "member" | "manager" | "creator" | "student";
+    initialFiles?: any[];
 }
 
-export default function AssignmentPost({ classId, assignmentId, onDelete, role }: AssignmentPostProps) {
+export default function AssignmentPost({ classroomId, assignmentId, initialTitle, initialDescription, dueDate: initialDueDate, points, createdAt, role, initialFiles: passedFiles }: AssignmentPostProps) {
     const router = useRouter();
 
-    const initialFiles = [
-        { name: "ใบงานที่_1.pdf", size: 1.5 * 1024 * 1024, type: "PDF" }
-    ];
+    const initialFiles: any[] = passedFiles || [];
+
+    // Helper function สำหรับแยกวันที่และเวลาออกจาก ISO date
+    const getInitialDateInfo = () => {
+        if (!initialDueDate) return { date: "", time: "23:59" };
+        const d = new Date(initialDueDate);
+        if (isNaN(d.getTime())) return { date: "", time: "23:59" };
+
+        // รูปแบบ YYYY-MM-DD
+        const dateStr = d.toISOString().split('T')[0];
+        // รูปแบบ HH:MM
+        const timeStr = d.toTimeString().substring(0, 5);
+        return { date: dateStr, time: timeStr };
+    };
+
+    const initDateInfo = getInitialDateInfo();
 
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isDeleted, setIsDeleted] = useState(false);
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [deleteStatus, setDeleteStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-    const [title, setTitle] = useState("ชื่องาน");
-    const [dueDate, setDueDate] = useState("2025-08-11");
-    const [dueTime, setDueTime] = useState("09:23");
-    const [score, setScore] = useState("10");
-    const [description, setDescription] = useState("รายละเอียดงาน");
+    const [title, setTitle] = useState(initialTitle || "ชื่องาน");
+    const [dueDate, setDueDate] = useState(initDateInfo.date || "");
+    const [dueTime, setDueTime] = useState(initDateInfo.time || "23:59");
+    const [score, setScore] = useState(points ? points.toString() : "100");
+    const [description, setDescription] = useState(initialDescription || "");
     const [files, setFiles] = useState<any[]>(initialFiles);
 
+    // Edit states
     const [editTitle, setEditTitle] = useState(title);
-    const [editDueDate, setEditDueDate] = useState(dueDate);
-    const [editDueTime, setEditDueTime] = useState(dueTime);
+    const [editDueDate, setEditDueDate] = useState(initDateInfo.date || "");
+    const [editDueTime, setEditDueTime] = useState(initDateInfo.time || "23:59");
     const [editScore, setEditScore] = useState(score);
     const [editDescription, setEditDescription] = useState(description);
-    const [editFiles, setEditFiles] = useState<any[]>(files);
+    // แยกไฟล์ออกเป็น 2 ประเภท
+    const [editExistingFiles, setEditExistingFiles] = useState<any[]>(initialFiles); // ไฟล์เดิมจาก DB (มี id)
+    const [editNewFiles, setEditNewFiles] = useState<File[]>([]);                   // ไฟล์ใหม่ที่อยู่ใน memory
+    const [deletedFileIds, setDeletedFileIds] = useState<string[]>([]);             // IDs ที่ถูกลบ
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const formatSize = (bytes: number) => {
+        if (!bytes) return "0 KB";
         if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + " MB";
         return (bytes / 1024).toFixed(0) + " KB";
     };
 
     const formatDate = (dateString: string, timeString: string) => {
-        if (!dateString) return "ไม่มีกำหนด";
+        if (!dateString || dateString === "ไม่มีกำหนด") return "ไม่มีกำหนดส่ง";
         const date = new Date(dateString);
         if (isNaN(date.getTime())) return `กำหนดส่งวันที่ ${dateString} ${timeString} น.`;
         const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
@@ -73,27 +97,31 @@ export default function AssignmentPost({ classId, assignmentId, onDelete, role }
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
-            const newFiles = Array.from(e.target.files).map(f => ({
-                name: f.name,
-                size: f.size,
-                type: f.name.split('.').pop()?.toUpperCase() || "FILE"
-            }));
-            setEditFiles(prev => [...prev, ...newFiles]);
+            setEditNewFiles(prev => [...prev, ...Array.from(e.target.files!)]);
         }
     };
 
-    const removeFile = (indexToRemove: number) => {
-        setEditFiles(editFiles.filter((_, index) => index !== indexToRemove));
+    const removeExistingFile = (fileId: string) => {
+        setEditExistingFiles(prev => prev.filter(f => f.id !== fileId));
+        setDeletedFileIds(prev => [...prev, fileId]);
+    };
+
+    const removeNewFile = (index: number) => {
+        setEditNewFiles(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleEditClick = (e: Event) => {
         e.stopPropagation();
+        // ใช้ state ล่าสุด
         setEditTitle(title);
         setEditDueDate(dueDate);
         setEditDueTime(dueTime);
         setEditScore(score);
         setEditDescription(description);
-        setEditFiles(files);
+        setEditExistingFiles(files); // reset เป็นไฟล์ปัจจุบัน
+        setEditNewFiles([]);
+        setDeletedFileIds([]);
+        setStatus('idle');
         setIsEditOpen(true);
     };
 
@@ -117,49 +145,64 @@ export default function AssignmentPost({ classId, assignmentId, onDelete, role }
         }
     };
 
-    const handleConfirmDelete = (e: React.MouseEvent) => {
+    const handleConfirmDelete = async (e: React.MouseEvent) => {
         e.stopPropagation();
         setDeleteStatus('loading');
 
-        setTimeout(() => {
-            if (title.toLowerCase().includes('error')) {
-                setDeleteStatus('error');
-            } else {
-                setDeleteStatus('success');
-            }
+        const result = await deleteAssignment(assignmentId, classroomId);
 
-            setTimeout(() => {
-                handleDeleteOpenChange(false);
-                setIsDeleted(true);
-                if (onDelete) {
-                    onDelete(assignmentId);
-                }
-            }, 2000);
-        }, 1500);
+        if (result?.error) {
+            console.error(result.error);
+            setDeleteStatus('error');
+            setTimeout(() => setDeleteStatus('idle'), 2000);
+            return;
+        }
+
+        setDeleteStatus('success');
+
+        setTimeout(() => {
+            handleDeleteOpenChange(false);
+            setIsDeleted(true);
+        }, 2000);
     };
 
-    const handleSave = (e: React.MouseEvent) => {
+    const handleSave = async (e: React.MouseEvent) => {
         e.stopPropagation();
         if (!editTitle.trim()) return;
 
         setStatus('loading');
 
-        setTimeout(() => {
-            if (editTitle.toLowerCase().includes('error')) {
-                setStatus('error');
-            } else {
-                setTitle(editTitle);
-                setDueDate(editDueDate);
-                setDueTime(editDueTime);
-                setScore(editScore);
-                setDescription(editDescription);
-                setFiles(editFiles);
-                setStatus('success');
-            }
+        const result = await editAssignment(
+            assignmentId,
+            classroomId,
+            editTitle,
+            editDescription,
+            editDueDate,
+            editDueTime,
+            editScore || "100",
+            deletedFileIds,
+            editNewFiles
+        );
 
-            setTimeout(() => {
-                handleOpenChange(false);
-            }, 2000);
+        if (result?.error) {
+            console.error(result.error);
+            setStatus('error');
+            setTimeout(() => setStatus('idle'), 2000);
+            return;
+        }
+
+        setTitle(editTitle);
+        setDueDate(editDueDate);
+        setDueTime(editDueTime);
+        setScore(editScore || "100");
+        setDescription(editDescription);
+        // update files state: เอาไฟล์ที่เหลือ + ไฟล์ใหม่เป็น placeholder
+        const newFilePlaceholders = editNewFiles.map(f => ({ name: f.name, size: f.size, type: f.type || 'FILE' }));
+        setFiles([...editExistingFiles, ...newFilePlaceholders]);
+        setStatus('success');
+
+        setTimeout(() => {
+            handleOpenChange(false);
         }, 1500);
     };
 
@@ -169,7 +212,7 @@ export default function AssignmentPost({ classId, assignmentId, onDelete, role }
     };
 
     const handleClick = () => {
-        router.push(`/classroom/${classId}/assignment/${assignmentId}/assignment_details`);
+        router.push(`/classroom/${classroomId}/assignment/${assignmentId}/assignment_details`);
     };
 
     if (isDeleted) return null;
@@ -198,7 +241,7 @@ export default function AssignmentPost({ classId, assignmentId, onDelete, role }
                             </span>
                         </div>
                     </div>
-                    {role !== "member" && (
+                    {role !== "student" && role !== "member" && (
                         <div onClick={(e) => e.stopPropagation()}>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -327,22 +370,36 @@ export default function AssignmentPost({ classId, assignmentId, onDelete, role }
                                         แนบไฟล์ประกอบ
                                     </Button>
 
-                                    {/* Selected Files List */}
-                                    {editFiles.length > 0 && (
+                                    {/* ไฟล์เดิมจาก DB */}
+                                    {(editExistingFiles.length > 0 || editNewFiles.length > 0) && (
                                         <div className="mt-3 space-y-2">
-                                            {editFiles.map((file, index) => (
-                                                <div key={index} className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded border border-gray-100">
+                                            {editExistingFiles.map((file) => (
+                                                <div key={file.id} className="flex items-center justify-between text-sm bg-blue-50 p-2 rounded border border-blue-100">
                                                     <div className="flex items-center text-gray-700 truncate">
-                                                        <FileIcon className="h-3 w-3 mr-2 flex-shrink-0" />
+                                                        <FileIcon className="h-3 w-3 mr-2 flex-shrink-0 text-blue-500" />
                                                         <span className="truncate max-w-[400px]">{file.name}</span>
                                                         <span className="ml-2 text-xs text-gray-400">({formatSize(file.size)})</span>
                                                     </div>
                                                     <button
                                                         type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            removeFile(index);
-                                                        }}
+                                                        onClick={(e) => { e.stopPropagation(); removeExistingFile(file.id); }}
+                                                        className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {editNewFiles.map((file, index) => (
+                                                <div key={index} className="flex items-center justify-between text-sm bg-green-50 p-2 rounded border border-green-100">
+                                                    <div className="flex items-center text-gray-700 truncate">
+                                                        <FileIcon className="h-3 w-3 mr-2 flex-shrink-0 text-green-500" />
+                                                        <span className="truncate max-w-[400px]">{file.name}</span>
+                                                        <span className="ml-2 text-xs text-gray-400">({formatSize(file.size)})</span>
+                                                        <span className="ml-2 text-xs text-green-500">ใหม่</span>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => { e.stopPropagation(); removeNewFile(index); }}
                                                         className="text-gray-400 hover:text-red-500 transition-colors p-1"
                                                     >
                                                         <X className="h-4 w-4" />

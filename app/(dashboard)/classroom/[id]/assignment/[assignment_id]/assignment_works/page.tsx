@@ -1,223 +1,124 @@
-"use client";
+import { createClient } from "@/utils/supabase/server";
+import AssignmentWorksClient from "@/components/classroom/assignment/assignment-works-client";
+import { redirect } from "next/navigation";
 
-import { useState } from "react";
-import AssignmentWorksTable, { Work } from "@/components/classroom/assignment/assignment-works-table";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { useParams } from "next/navigation";
+export default async function AssignmentWorksPage({ params }: { params: { id: string, assignment_id: string } }) {
+    const { id: classroomId, assignment_id: assignmentId } = await params;
+    const supabase = await createClient();
 
-const MOCK_WORKS: Work[] = [
-    {
-        id: "1",
-        name: "นายสมชาย เรียนเก่ง",
-        avatar: "",
-        status: "submitted",
-        submittedAt: "10 ต.ค. 2023 10:30",
-        workFile: "assignment_somchai.pdf",
-        score: null,
-    },
-    {
-        id: "2",
-        name: "นางสาวสมหญิง ตั้งใจ",
-        avatar: "",
-        status: "submitted",
-        submittedAt: "10 ต.ค. 2023 11:15",
-        workFile: "report_final.docx",
-        score: 8,
-    },
-    {
-        id: "3",
-        name: "นายมานี มีมานะ",
-        avatar: "",
-        status: "late",
-        submittedAt: "11 ต.ค. 2023 09:00",
-        workFile: "homework_manee.pdf",
-        score: null,
-    },
-    {
-        id: "4",
-        name: "นายปิติ ชูใจ",
-        avatar: "",
-        status: "missing",
-        submittedAt: null,
-        workFile: null,
-        score: null,
-    },
-    {
-        id: "5",
-        name: "นายชูใจ รักดี",
-        avatar: "",
-        status: "assigned",
-        submittedAt: null,
-        workFile: null,
-        score: null,
-    },
-    {
-        id: "6",
-        name: "นายสมชาย เรียนเก่ง",
-        avatar: "",
-        status: "submitted",
-        submittedAt: "10 ต.ค. 2023 10:30",
-        workFile: "assignment_somchai.pdf",
-        score: null,
-    },
-    {
-        id: "7",
-        name: "นางสาวสมหญิง ตั้งใจ",
-        avatar: "",
-        status: "submitted",
-        submittedAt: "10 ต.ค. 2023 11:15",
-        workFile: "report_final.docx",
-        score: 8,
-    },
-    {
-        id: "8",
-        name: "นายมานี มีมานะ",
-        avatar: "",
-        status: "late",
-        submittedAt: "11 ต.ค. 2023 09:00",
-        workFile: "homework_manee.pdf",
-        score: null,
-    },
-    {
-        id: "9",
-        name: "นายปิติ ชูใจ",
-        avatar: "",
-        status: "missing",
-        submittedAt: null,
-        workFile: null,
-        score: null,
-    },
-    {
-        id: "10",
-        name: "นายชูใจ รักดี",
-        avatar: "",
-        status: "assigned",
-        submittedAt: null,
-        workFile: null,
-        score: null,
-    },
-    {
-        id: "11",
-        name: "นายสมชาย เรียนเก่ง",
-        avatar: "",
-        status: "submitted",
-        submittedAt: "10 ต.ค. 2023 10:30",
-        workFile: "assignment_somchai.pdf",
-        score: null,
-    },
-    {
-        id: "12",
-        name: "นางสาวสมหญิง ตั้งใจ",
-        avatar: "",
-        status: "submitted",
-        submittedAt: "10 ต.ค. 2023 11:15",
-        workFile: "report_final.docx",
-        score: 8,
-    },
-    {
-        id: "13",
-        name: "นายมานี มีมานะ",
-        avatar: "",
-        status: "late",
-        submittedAt: "11 ต.ค. 2023 09:00",
-        workFile: "homework_manee.pdf",
-        score: null,
-    },
-    {
-        id: "14",
-        name: "นายปิติ ชูใจ",
-        avatar: "",
-        status: "missing",
-        submittedAt: null,
-        workFile: null,
-        score: null,
-    },
-    {
-        id: "15",
-        name: "นายชูใจ รักดี",
-        avatar: "",
-        status: "assigned",
-        submittedAt: null,
-        workFile: null,
-        score: null,
-    },
-];
+    // 1. Get User
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return redirect("/login");
 
+    // 2. check role (manager/creator only)
+    const { data: membership } = await supabase
+        .from('classroom_members')
+        .select('role')
+        .eq('classroom_id', classroomId)
+        .eq('user_id', user.id)
+        .single();
 
-export default function AssignmentWorksPage() {
-    const params = useParams();
-    const [works, setWorks] = useState<Work[]>(MOCK_WORKS);
-    const [savedWorks, setSavedWorks] = useState<Work[]>(MOCK_WORKS);
+    if (!membership || !['creator', 'manager'].includes(membership.role)) {
+        return redirect(`/classroom/${classroomId}/assignment/${assignmentId}/assignment_details`);
+    }
 
-    const hasChanges = JSON.stringify(works) !== JSON.stringify(savedWorks);
+    // 3. Get Assignment Details
+    const { data: assignment } = await supabase
+        .from('assignments')
+        .select('points, due_date')
+        .eq('id', assignmentId)
+        .single();
 
-    const handleScoreChange = (id: string, newScore: number | null) => {
-        setWorks(prev => prev.map(w => w.id === id ? { ...w, score: newScore } : w));
-    };
+    if (!assignment) return <div className="p-8 text-center">ไม่พบข้อมูลงาน</div>;
 
-    const handleReset = () => {
-        setWorks(JSON.parse(JSON.stringify(savedWorks)));
-    };
+    // 4. Get all students
+    const { data: students } = await supabase
+        .from('classroom_members')
+        .select(`
+            user_id,
+            profiles:user_id(first_name, last_name)
+        `)
+        .eq('classroom_id', classroomId)
+        .eq('role', 'student');
 
-    const handleSave = () => {
-        setSavedWorks(JSON.parse(JSON.stringify(works)));
-        // In a real app, you would save to the backend here
-    };
+    // 5. Get all submissions and grades for this assignment
+    const { data: submissions } = await supabase
+        .from('submissions')
+        .select(`
+            id,
+            student_id,
+            status,
+            submitted_at,
+            grades(score)
+        `)
+        .eq('assignment_id', assignmentId);
 
-    const submittedCount = works.filter(w => w.status === "submitted" || w.status === "late").length;
-    const totalCount = works.length;
+    // Merge logic
+    const dueDate = assignment.due_date ? new Date(assignment.due_date) : null;
+    const now = new Date();
+
+    const mappedWorks = (students || []).map(student => {
+        const profile = Array.isArray(student.profiles) ? student.profiles[0] : student.profiles;
+        const sub = submissions?.find(s => s.student_id === student.user_id);
+
+        // --- คะแนน ---
+        let score: number | null = null;
+        if (sub?.grades && Array.isArray(sub.grades) && sub.grades.length > 0) {
+            score = sub.grades[0].score !== undefined ? Number(sub.grades[0].score) : null;
+        } else if (sub?.grades && !Array.isArray(sub.grades)) {
+            score = (sub.grades as any).score !== undefined ? Number((sub.grades as any).score) : null;
+        }
+
+        // --- สถานะ (ตามเงื่อนไข) ---
+        let status: string;
+        if (!sub) {
+            // ยังไม่มีการส่งงานเลย
+            status = (dueDate && dueDate < now) ? "missing" : "assigned";
+        } else if (score !== null) {
+            // ครูกรอกคะแนนแล้ว → ตรวจแล้ว
+            status = "graded";
+        } else if (sub.status === "assigned") {
+            // student กดทำเครื่องหมายว่าเสร็จสิ้น (ยังไม่ได้ upload ไฟล์)
+            status = "assigned";
+        } else if (sub.submitted_at && dueDate && new Date(sub.submitted_at) > dueDate) {
+            // ส่งหลัง due_date → ส่งช้า
+            status = "late";
+        } else {
+            // ส่งก่อน due_date (หรือไม่มี due_date) → ส่งแล้ว
+            status = "submitted";
+        }
+
+        // --- ชื่อ ---
+        const name = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'นิรนาม (ยังไม่ตั้งชื่อ)';
+
+        // --- วันที่ส่ง ---
+        let rawDate: string | null = null;
+        if (sub?.submitted_at) {
+            const d = new Date(sub.submitted_at);
+            const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+            rawDate = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543} ${("0" + d.getHours()).slice(-2)}:${("0" + d.getMinutes()).slice(-2)} น.`;
+        }
+
+        return {
+            id: student.user_id,
+            name,
+            avatar: '',
+            status,
+            submittedAt: rawDate,
+            workFile: null,
+            score,
+        };
+    });
+
 
     return (
         <div className="flex justify-center w-full">
-            <div className="flex flex-col w-[1200px] mb-12">
-
-                <div className="flex items-end gap-2 justify-center mt-12 mb-12">
-                    <h1 className="text-2xl">ส่งแล้ว</h1>
-                    <h1 className="text-6xl font-bold text-blue-600">{submittedCount}</h1>
-                    <h3 className="text-2xl ">/</h3>
-                    <h1 className="text-2xl ">{totalCount}</h1>
-                </div>
-
-                <div className="flex justify-between mb-4">
-                    <Link href={`/classroom/${params.id}/assignment/${params.assignment_id}/assignment_all`}>
-                        <Button variant="ghost" className="group text-blue-600 hover:text-blue-700 hover:bg-transparent">
-                            ดูรายละเอียดงานทั้งหมด <ArrowRight className="group-hover:translate-x-1 transition-transform" />
-                        </Button>
-                    </Link>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            className="text-gray-700 border-gray-300"
-                            onClick={handleReset}
-                            disabled={!hasChanges}
-                        >
-                            รีเซ็ต
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className={`
-                                transition-all
-                                ${hasChanges
-                                    ? "bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 hover:text-white"
-                                    : "bg-gray-100 text-gray-400"
-                                }
-                            `}
-                            onClick={handleSave}
-                            disabled={!hasChanges}
-                        >
-                            บันทึก
-                        </Button>
-                    </div>
-
-                </div>
-
-                <AssignmentWorksTable
-                    works={works}
-                    onScoreChange={handleScoreChange}
-                />
-            </div>
+            <AssignmentWorksClient
+                classroomId={classroomId}
+                assignmentId={assignmentId}
+                totalScore={assignment.points}
+                initialWorks={mappedWorks}
+            />
         </div>
     );
 }

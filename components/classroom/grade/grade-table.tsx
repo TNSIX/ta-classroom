@@ -6,8 +6,8 @@ interface GradeTableProps {
 }
 
 export default function GradeTable({ assignments, students }: GradeTableProps) {
-    // Mock Data moved to parent
-
+    // คำนวณคะแนนเต็มรวมทุกงาน
+    const totalMaxScore = assignments.reduce((acc, curr) => acc + (curr.maxScore || 0), 0);
 
     return (
         <div className="w-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -29,7 +29,7 @@ export default function GradeTable({ assignments, students }: GradeTableProps) {
                             <th className="px-6 py-4 font-medium text-center whitespace-nowrap min-w-[120px] bg-gray-50 sticky right-0 z-10 border-l border-gray-200">
                                 <div className="flex flex-col items-center">
                                     <span className="text-gray-800">รวม</span>
-                                    <span className="text-xs text-gray-500 font-normal">(100 คะแนน)</span>
+                                    <span className="text-xs text-gray-500 font-normal">({totalMaxScore} คะแนน)</span>
                                 </div>
                             </th>
                         </tr>
@@ -54,7 +54,7 @@ export default function GradeTable({ assignments, students }: GradeTableProps) {
                                         </td>
                                     ))}
                                     <td className="px-6 py-4 text-center font-semibold text-blue-600 sticky right-0 bg-white group-hover:bg-gray-50 z-10 border-l border-gray-200">
-                                        {totalScore}
+                                        {totalScore} / {totalMax}
                                     </td>
                                 </tr>
                             );

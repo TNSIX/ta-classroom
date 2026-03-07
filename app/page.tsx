@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { Caveat } from "next/font/google";
+
+const caveat = Caveat({ subsets: ["latin"], weight: ["700"] });
 
 export default function Home() {
-
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center relative overflow-hidden">
@@ -18,11 +20,11 @@ export default function Home() {
 
       {/* Logo / Title Area */}
       <div className="flex flex-col items-center mb-16 space-y-2 relative z-10">
-        <h1 className="text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-800 drop-shadow-sm select-none">
+        <h1 className="text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-800 drop-shadow-sm select-none">
           Teacher Assistant
         </h1>
-        <h2 className="text-4xl font-bold tracking-[0.8em] text-gray-800 select-none">
-          CLASSROOM
+        <h2 className={`${caveat.className} text-8xl text-gray-800 select-none pb-2 pt-2 -rotate-2 transform`}>
+          Classroom .
         </h2>
         <p className="mt-6 text-slate-500 text-lg max-w-md text-center font-light select-none">
           {'<'} เริ่มต้นใช้งานระบบจัดการห้องเรียนกับเรา {'/>'}

@@ -1,69 +1,111 @@
-import ClassroomID from "@/components/classroom/classroom-id";
-import ClassroomStatus from "@/components/classroom/classroom-status";
 import ExportGradesButton from "@/components/classroom/grade/export-grades-button";
 import GradeTable from "@/components/classroom/grade/grade-table";
 import { BarChart3, TrendingUp, TrendingDown, Activity } from "lucide-react";
+import { createClient } from "@/utils/supabase/server";
+import { redirect } from "next/navigation";
 
-export default function GradePage() {
-    // Mock Data
-    const assignments = [
-        { id: 1, name: "การบ้าน 1", maxScore: 10 },
-        { id: 2, name: "การบ้าน 2", maxScore: 10 },
-        { id: 3, name: "Lab 1", maxScore: 20 },
-        { id: 4, name: "Lab 2", maxScore: 20 },
-        { id: 5, name: "Quiz 1", maxScore: 10 },
-        { id: 6, name: "Quiz 2", maxScore: 10 },
-        { id: 7, name: "Project", maxScore: 50 },
-        { id: 8, name: "สอบกลางภาค", maxScore: 30 },
-        { id: 9, name: "สอบปลายภาค", maxScore: 40 },
-        { id: 10, name: "สอบปลายภาค", maxScore: 40 },
-        { id: 11, name: "สอบปลายภาค", maxScore: 40 },
-        { id: 12, name: "สอบปลายภาค", maxScore: 40 },
-        { id: 13, name: "สอบปลายภาค", maxScore: 40 },
-        { id: 14, name: "สอบปลายภาค", maxScore: 40 },
-        { id: 15, name: "สอบปลายภาค", maxScore: 40 },
-        { id: 16, name: "สอบปลายภาค", maxScore: 40 },
-        { id: 17, name: "สอบปลายภาค", maxScore: 40 },
-        { id: 18, name: "สอบปลายภาค", maxScore: 40 },
-        { id: 19, name: "สอบปลายภาค", maxScore: 40 },
-        { id: 20, name: "สอบปลายภาค", maxScore: 40 },
-    ];
+export default async function GradePage({ params }: { params: { id: string } }) {
+    const { id: classroomId } = await params;
+    const supabase = await createClient();
 
-    const students = [
-        { id: 1, name: "สมชาย แซ่ลี้", scores: { 1: 9, 2: 10, 3: 18, 4: 19, 5: 9, 6: 8, 7: 45, 8: 25, 9: 35 } },
-        { id: 2, name: "สมหญิง ใจดี", scores: { 1: 10, 2: 9, 3: 20, 4: 20, 5: 10, 6: 10, 7: 48, 8: 28, 9: 38 } },
-        { id: 3, name: "จอห์น โด", scores: { 1: 7, 2: 8, 3: 15, 4: 16, 5: 7, 6: 6, 7: 40, 8: 20, 9: 30 } },
-        { id: 4, name: "เจน สมิธ", scores: { 1: 10, 2: 10, 3: 19, 4: 19, 5: 9, 6: 9, 7: 46, 8: 29, 9: 39 } },
-        { id: 5, name: "ทอม ครูซ", scores: { 1: 8, 2: 9, 3: 17, 4: 18, 5: 8, 6: 8, 7: 42, 8: 24, 9: 34 } },
-        { id: 6, name: "ทอม ครูซ", scores: { 1: 8, 2: 9, 3: 17, 4: 18, 5: 8, 6: 8, 7: 42, 8: 24, 9: 34 } },
-        { id: 7, name: "ทอม ครูซ", scores: { 1: 8, 2: 9, 3: 17, 4: 18, 5: 8, 6: 8, 7: 42, 8: 24, 9: 34 } },
-        { id: 8, name: "ทอม ครูซ", scores: { 1: 8, 2: 9, 3: 17, 4: 18, 5: 8, 6: 8, 7: 42, 8: 24, 9: 34 } },
-        { id: 9, name: "ทอม ครูซ", scores: { 1: 8, 2: 9, 3: 17, 4: 18, 5: 8, 6: 8, 7: 42, 8: 24, 9: 34 } },
-        { id: 10, name: "ทอม ครูซ", scores: { 1: 8, 2: 9, 3: 17, 4: 18, 5: 8, 6: 8, 7: 42, 8: 24, 9: 34 } },
-        { id: 11, name: "ทอม ครูซ", scores: { 1: 8, 2: 9, 3: 17, 4: 18, 5: 8, 6: 8, 7: 42, 8: 24, 9: 34 } },
-        { id: 12, name: "ทอม ครูซ", scores: { 1: 8, 2: 9, 3: 17, 4: 18, 5: 8, 6: 8, 7: 42, 8: 24, 9: 34 } },
-        { id: 13, name: "ทอม ครูซ", scores: { 1: 8, 2: 9, 3: 17, 4: 18, 5: 8, 6: 8, 7: 42, 8: 24, 9: 34 } },
-        { id: 14, name: "ทอม ครูซ", scores: { 1: 8, 2: 9, 3: 17, 4: 18, 5: 8, 6: 8, 7: 42, 8: 24, 9: 34 } },
-        { id: 15, name: "ทอม ครูซ", scores: { 1: 8, 2: 9, 3: 17, 4: 18, 5: 8, 6: 8, 7: 42, 8: 24, 9: 34 } },
-        { id: 16, name: "ทอม ครูซ", scores: { 1: 8, 2: 9, 3: 17, 4: 18, 5: 8, 6: 8, 7: 42, 8: 24, 9: 34 } },
-        { id: 17, name: "ทอม ครูซ", scores: { 1: 8, 2: 9, 3: 17, 4: 18, 5: 8, 6: 8, 7: 42, 8: 24, 9: 34 } },
-        { id: 18, name: "ทอม ครูซ", scores: { 1: 8, 2: 9, 3: 17, 4: 18, 5: 8, 6: 8, 7: 42, 8: 24, 9: 34 } },
-        { id: 19, name: "ทอม ครูซ", scores: { 1: 8, 2: 9, 3: 17, 4: 18, 5: 8, 6: 8, 7: 42, 8: 24, 9: 34 } },
-        { id: 20, name: "ทอม ครูซ", scores: { 1: 8, 2: 9, 3: 17, 4: 18, 5: 8, 6: 8, 7: 42, 8: 24, 9: 34 } },
-    ];
+    // 1. Get current user and role
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: userMembership } = await supabase
+        .from('classroom_members')
+        .select('role')
+        .eq('classroom_id', classroomId)
+        .eq('user_id', user?.id)
+        .single();
+
+    const role = userMembership?.role || 'student';
+    const isStudent = role === 'student';
+
+    if (isStudent) {
+        return redirect(`/classroom/${classroomId}/forum`);
+    }
+
+    // 2. Fetch Class Info
+    const { data: classroom } = await supabase
+        .from('classrooms')
+        .select('name')
+        .eq('id', classroomId)
+        .single();
+    const classroomName = classroom?.name || "Classroom";
+
+    // 3. Fetch Assignments
+    const { data: assignmentData } = await supabase
+        .from('assignments')
+        .select('id, title, points')
+        .eq('classroom_id', classroomId)
+        .order('created_at', { ascending: true });
+
+    const assignments = (assignmentData || []).map(a => ({
+        id: a.id,
+        name: a.title,
+        maxScore: Number(a.points) || 100,
+    }));
+
+    // 4. Fetch Students in Classroom
+    const { data: memberData } = await supabase
+        .from('classroom_members')
+        .select(`
+            user_id,
+            profiles:user_id ( id, first_name, last_name )
+        `)
+        .eq('classroom_id', classroomId)
+        .eq('role', 'student');
+
+    let allStudents = (memberData || []).map((m: any) => {
+        const profile = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+        return {
+            id: m.user_id,
+            name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 'ไม่ระบุชื่อ',
+            scores: {} as Record<string, number>
+        };
+    });
+
+    // If role is student, only show their own grades
+    // Now disabled since we redirect students away.
+
+    // 5. Fetch Submissions and Grades
+    if (assignments.length > 0) {
+        const assignmentIds = assignments.map(a => a.id);
+        const { data: submissionData } = await supabase
+            .from('submissions')
+            .select(`
+                student_id,
+                assignment_id,
+                grades ( score )
+            `)
+            .in('assignment_id', assignmentIds);
+
+        (submissionData || []).forEach((sub: any) => {
+            const student = allStudents.find(s => s.id === sub.student_id);
+            if (student) {
+                const gradeObj = Array.isArray(sub.grades) ? sub.grades[0] : sub.grades;
+                if (gradeObj && gradeObj.score !== null && gradeObj.score !== undefined) {
+                    student.scores[sub.assignment_id] = Number(gradeObj.score);
+                }
+            }
+        });
+    }
+
+    const students = allStudents;
 
     // Calculate Statistics
-    const studentTotals = students.map(student =>
-        assignments.reduce((acc, curr) => acc + ((student.scores as Record<number, number>)[curr.id] || 0), 0)
-    );
+    const studentTotals = students.length > 0 ? students.map(student =>
+        assignments.reduce((acc, curr) => acc + (student.scores[curr.id] || 0), 0)
+    ) : [0];
 
-    const minScore = Math.min(...studentTotals);
-    const maxScore = Math.max(...studentTotals);
+    const minScore = studentTotals.length > 0 ? Math.min(...studentTotals) : 0;
+    const maxScore = studentTotals.length > 0 ? Math.max(...studentTotals) : 0;
     const sumScore = studentTotals.reduce((a, b) => a + b, 0);
-    const avgScore = sumScore / studentTotals.length;
+    const avgScore = studentTotals.length > 0 ? sumScore / studentTotals.length : 0;
 
     // Variance and SD
-    const variance = studentTotals.reduce((a, b) => a + Math.pow(b - avgScore, 2), 0) / studentTotals.length;
+    const variance = studentTotals.length > 0
+        ? studentTotals.reduce((a, b) => a + Math.pow(b - avgScore, 2), 0) / studentTotals.length
+        : 0;
     const sdScore = Math.sqrt(variance);
 
     const StatCard = ({ title, value, icon: Icon, color, subValue }: any) => (
@@ -115,9 +157,15 @@ export default function GradePage() {
 
                 <div className="flex flex-col gap-4">
                     <div className="flex justify-end">
-                        <ExportGradesButton students={students} assignments={assignments} classroomName="วิศวกรรมซอฟต์แวร์_CS101" />
+                        <ExportGradesButton students={students} assignments={assignments} classroomName={classroomName} />
                     </div>
-                    <GradeTable assignments={assignments} students={students} />
+                    {students.length > 0 || assignments.length > 0 ? (
+                        <GradeTable assignments={assignments} students={students} />
+                    ) : (
+                        <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500">
+                            ยังไม่มีข้อมูลการให้คะแนน
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

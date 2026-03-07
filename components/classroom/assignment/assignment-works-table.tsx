@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 import {
     Table,
@@ -26,11 +26,13 @@ interface AssignmentWorksTableProps {
     totalScore?: number | null;
     works: Work[];
     onScoreChange: (id: string, score: number | null) => void;
+    isPending?: boolean;
 }
 
-export default function AssignmentWorksTable({ totalScore = 10, works, onScoreChange }: AssignmentWorksTableProps) {
+export default function AssignmentWorksTable({ totalScore = 10, works, onScoreChange, isPending = false }: AssignmentWorksTableProps) {
     const getStatusIcon = (status: string) => {
         switch (status) {
+            case "graded": return <CheckCircle2 className="w-4 h-4 text-purple-500" />;
             case "submitted": return <CheckCircle2 className="w-4 h-4 text-green-500" />;
             case "late": return <Clock className="w-4 h-4 text-orange-500" />;
             case "missing": return <AlertCircle className="w-4 h-4 text-red-500" />;
@@ -41,11 +43,23 @@ export default function AssignmentWorksTable({ totalScore = 10, works, onScoreCh
 
     const getStatusText = (status: string) => {
         switch (status) {
+            case "graded": return "ตรวจแล้ว";
             case "submitted": return "ส่งแล้ว";
             case "late": return "ส่งช้า";
             case "missing": return "ยังไม่ส่ง";
             case "assigned": return "มอบหมายแล้ว";
             default: return "";
+        }
+    };
+
+    const getStatusClass = (status: string) => {
+        switch (status) {
+            case "graded": return "bg-purple-50 text-purple-700";
+            case "submitted": return "bg-green-50 text-green-700";
+            case "late": return "bg-orange-50 text-orange-700";
+            case "missing": return "bg-red-50 text-red-700";
+            case "assigned": return "bg-gray-50 text-gray-500";
+            default: return "bg-gray-50 text-gray-500";
         }
     };
 
@@ -74,9 +88,12 @@ export default function AssignmentWorksTable({ totalScore = 10, works, onScoreCh
                                     </div>
                                 </TableCell>
                                 <TableCell>
-                                    <div className="flex items-center gap-1.5">
+                                    <div className={cn(
+                                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-medium",
+                                        getStatusClass(work.status)
+                                    )}>
                                         {getStatusIcon(work.status)}
-                                        <span className="text-sm text-gray-500">{getStatusText(work.status)}</span>
+                                        <span>{getStatusText(work.status)}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-gray-500 text-md">
@@ -87,18 +104,20 @@ export default function AssignmentWorksTable({ totalScore = 10, works, onScoreCh
                                         <div className="flex items-center gap-2">
                                             <Input
                                                 type="number"
-                                                className="w-16 text-center"
+                                                className="w-16 text-center remove-arrow"
                                                 value={work.score !== null ? work.score : ""}
                                                 onChange={(e) => {
                                                     const val = e.target.value;
                                                     let num = val === "" ? null : Number(val);
-                                                    if (num !== null && num > totalScore) {
+                                                    if (num !== null && totalScore && num > totalScore) {
                                                         num = totalScore;
                                                     }
                                                     onScoreChange(work.id, num);
                                                 }}
-                                                placeholder="0"
+                                                placeholder="-"
                                                 max={totalScore}
+                                                min={0}
+                                                disabled={isPending}
                                             />
                                             <span className="text-gray-400">/ {totalScore}</span>
                                         </div>

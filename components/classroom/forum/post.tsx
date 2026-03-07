@@ -11,6 +11,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState, useRef } from "react";
+import { editForumPost, deleteForumPost } from "@/app/actions/forum";
 import FileAttachment from "@/components/classroom/forum/file-attachment";
 import {
     Dialog,
@@ -24,59 +25,72 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
 interface ForumPostProps {
-    id?: number | string;
-    onDelete?: (id: number | string) => void;
-    role?: "member" | "manager" | "creator"; // เพิ่ม role เพื่อใช้เช็คสิทธิ์
+    id: string;
+    classroomId: string; // เผื่อสำหรับการลบและแก้ไขผ่าน server action ในอนาคต
+    initialTitle?: string;
+    initialContent?: string;
+    initialFiles?: any[];
+    authorName?: string;
+    createdAt?: string;
+    role?: "member" | "manager" | "creator" | "student";
 }
 
-export function ForumPost({ id, onDelete, role }: ForumPostProps) {
-    const initialFiles = [
-        { name: "เอกสารประกอบการสอน_บทที่_1.pdf", size: 2.4 * 1024 * 1024, type: "PDF" },
-        { name: "แบบฝึกหัดเสริม.docx", size: 1.2 * 1024 * 1024, type: "DOCX" },
-        { name: "รูปภาพประกอบ.png", size: 500 * 1024, type: "PNG" },
-        { name: "แบบฝึกหัดเสริม.docx", size: 1.2 * 1024 * 1024, type: "DOCX" },
-        { name: "รูปภาพประกอบ.png", size: 500 * 1024, type: "PNG" }
-    ];
+export function ForumPost({ id, classroomId, initialTitle, initialContent, initialFiles = [], authorName, createdAt, role }: ForumPostProps) {
 
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isDeleted, setIsDeleted] = useState(false);
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [deleteStatus, setDeleteStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-    const [title, setTitle] = useState("หัวข้อประกาศ");
-    const [content, setContent] = useState("เนื้อหาประกาศ");
+    const [title, setTitle] = useState(initialTitle || "หัวข้อประกาศ");
+    const [content, setContent] = useState(initialContent || "");
     const [editTitle, setEditTitle] = useState(title);
     const [editContent, setEditContent] = useState(content);
 
-    // File states
+    // Format Date
+    const formattedDate = createdAt ? new Date(createdAt).toLocaleString('th-TH', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    }) : 'ไม่ระบุเวลา';
+
+    // File states — แยกเป็น 3 ประเภท
     const [files, setFiles] = useState<any[]>(initialFiles);
-    const [editFiles, setEditFiles] = useState<any[]>(initialFiles);
+    const [editExistingFiles, setEditExistingFiles] = useState<any[]>(initialFiles); // ไฟล์เดิมจาก DB (มี id)
+    const [editNewFiles, setEditNewFiles] = useState<File[]>([]);                   // ไฟล์ใหม่ที่อยู่ใน memory
+    const [deletedFileIds, setDeletedFileIds] = useState<string[]>([]);             // IDs ที่ถูกลบ
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const formatSize = (bytes: number) => {
+        if (!bytes) return "0 KB";
         if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + " MB";
         return (bytes / 1024).toFixed(0) + " KB";
     };
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
-            const newFiles = Array.from(e.target.files).map(f => ({
-                name: f.name,
-                size: f.size,
-                type: f.name.split('.').pop()?.toUpperCase() || "FILE"
-            }));
-            setEditFiles(prev => [...prev, ...newFiles]);
+            setEditNewFiles(prev => [...prev, ...Array.from(e.target.files!)]);
         }
     };
 
-    const removeFile = (indexToRemove: number) => {
-        setEditFiles(editFiles.filter((_, index) => index !== indexToRemove));
+    const removeExistingFile = (fileId: string) => {
+        setEditExistingFiles(prev => prev.filter(f => f.id !== fileId));
+        setDeletedFileIds(prev => [...prev, fileId]);
+    };
+
+    const removeNewFile = (index: number) => {
+        setEditNewFiles(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleEditClick = () => {
         setEditTitle(title);
         setEditContent(content);
-        setEditFiles(files);
+        setEditExistingFiles(files); // reset เป็นไฟล์ปัจจุบัน
+        setEditNewFiles([]);
+        setDeletedFileIds([]);
+        setStatus('idle');
         setIsEditOpen(true);
     };
 
@@ -87,25 +101,35 @@ export function ForumPost({ id, onDelete, role }: ForumPostProps) {
         }
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!editTitle.trim()) return;
 
         setStatus('loading');
 
-        setTimeout(() => {
-            if (editTitle.toLowerCase().includes('error')) {
-                setStatus('error');
-            } else {
-                setTitle(editTitle);
-                setContent(editContent);
-                setFiles(editFiles);
-                setStatus('success');
-            }
+        const result = await editForumPost(
+            id,
+            classroomId,
+            editTitle,
+            editContent,
+            deletedFileIds,
+            editNewFiles
+        );
 
-            setTimeout(() => {
-                handleOpenChange(false);
-            }, 2000);
-        }, 1500);
+        if (result?.error) {
+            console.error(result.error);
+            setStatus('error');
+            setTimeout(() => setStatus('idle'), 2000);
+            return;
+        }
+
+        setTitle(editTitle);
+        setContent(editContent);
+        // update files: ไฟล์ที่เหลือ + placeholder ไฟล์ใหม่
+        const newFilePlaceholders = editNewFiles.map(f => ({ name: f.name, size: f.size, type: f.type || 'FILE' }));
+        setFiles([...editExistingFiles, ...newFilePlaceholders]);
+        setStatus('success');
+
+        setTimeout(() => handleOpenChange(false), 1500);
     };
 
     const handleCancel = () => {
@@ -125,23 +149,23 @@ export function ForumPost({ id, onDelete, role }: ForumPostProps) {
         }
     };
 
-    const handleConfirmDelete = () => {
+    const handleConfirmDelete = async () => {
         setDeleteStatus('loading');
 
-        setTimeout(() => {
-            if (title.toLowerCase().includes('error')) {
-                setDeleteStatus('error');
-            } else {
-                setDeleteStatus('success');
-            }
+        const result = await deleteForumPost(id, classroomId);
 
-            setTimeout(() => {
-                handleDeleteOpenChange(false);
-                setIsDeleted(true);
-                if (onDelete && id !== undefined) {
-                    onDelete(id);
-                }
-            }, 2000);
+        if (result?.error) {
+            console.error(result.error);
+            setDeleteStatus('error');
+            setTimeout(() => setDeleteStatus('idle'), 2000);
+            return;
+        }
+
+        setDeleteStatus('success');
+
+        setTimeout(() => {
+            handleDeleteOpenChange(false);
+            setIsDeleted(true);
         }, 1500);
     };
 
@@ -161,14 +185,14 @@ export function ForumPost({ id, onDelete, role }: ForumPostProps) {
                         </Avatar>
                         <div className="flex flex-col">
                             <span className="text-gray-900">
-                                ชื่อ นามสกุล
+                                {authorName || "ชื่อ นามสกุล"}
                             </span>
                             <span className="text-sm text-gray-500">
-                                ประกาศวันที่ 11 ส.ค. 2568 9:23 น.
+                                {formattedDate}
                             </span>
                         </div>
                     </div>
-                    {role !== "member" && (
+                    {role !== "student" && role !== "member" && (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
@@ -202,12 +226,20 @@ export function ForumPost({ id, onDelete, role }: ForumPostProps) {
                         {content}
                     </p>
 
-                    {/* ตัวอย่างการแสดงไฟล์แนบ */}
-                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {files.map((file, idx) => (
-                            <FileAttachment key={idx} fileName={file.name} fileSize={formatSize(file.size)} fileType={file.type} />
-                        ))}
-                    </div>
+                    {/* ไฟล์แนบ */}
+                    {files && files.length > 0 && (
+                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {files.map((file, idx) => (
+                                <FileAttachment
+                                    key={idx}
+                                    fileName={file.name || file.file_name}
+                                    fileSize={formatSize(file.size || file.file_size)}
+                                    fileType={file.type || file.file_type || "FILE"}
+                                    fileUrl={file.file_url}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
 
             </div>
@@ -268,19 +300,36 @@ export function ForumPost({ id, onDelete, role }: ForumPostProps) {
                                         แนบไฟล์ประกอบ
                                     </Button>
 
-                                    {/* Selected Files List */}
-                                    {editFiles.length > 0 && (
+                                    {/* ไฟล์เดิมจาก DB (สีฟ้า) + ไฟล์ใหม่ (สีเขียว) */}
+                                    {(editExistingFiles.length > 0 || editNewFiles.length > 0) && (
                                         <div className="mt-3 space-y-2">
-                                            {editFiles.map((file, index) => (
-                                                <div key={index} className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded border border-gray-100">
+                                            {editExistingFiles.map((file) => (
+                                                <div key={file.id} className="flex items-center justify-between text-sm bg-blue-50 p-2 rounded border border-blue-100">
                                                     <div className="flex items-center text-gray-700 truncate">
-                                                        <FileIcon className="h-3 w-3 mr-2 flex-shrink-0" />
-                                                        <span className="truncate max-w-[400px]">{file.name}</span>
-                                                        <span className="ml-2 text-xs text-gray-400">({formatSize(file.size)})</span>
+                                                        <FileIcon className="h-3 w-3 mr-2 flex-shrink-0 text-blue-500" />
+                                                        <span className="truncate max-w-[400px]">{file.file_name || file.name}</span>
+                                                        <span className="ml-2 text-xs text-gray-400">({formatSize(file.file_size || file.size)})</span>
                                                     </div>
                                                     <button
                                                         type="button"
-                                                        onClick={() => removeFile(index)}
+                                                        onClick={() => removeExistingFile(file.id)}
+                                                        className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {editNewFiles.map((file, index) => (
+                                                <div key={index} className="flex items-center justify-between text-sm bg-green-50 p-2 rounded border border-green-100">
+                                                    <div className="flex items-center text-gray-700 truncate">
+                                                        <FileIcon className="h-3 w-3 mr-2 flex-shrink-0 text-green-500" />
+                                                        <span className="truncate max-w-[400px]">{file.name}</span>
+                                                        <span className="ml-2 text-xs text-gray-400">({formatSize(file.size)})</span>
+                                                        <span className="ml-2 text-xs text-green-500">ใหม่</span>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeNewFile(index)}
                                                         className="text-gray-400 hover:text-red-500 transition-colors p-1"
                                                     >
                                                         <X className="h-4 w-4" />

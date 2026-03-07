@@ -3,12 +3,12 @@
 import { Copy, Check } from "lucide-react";
 import { useState } from "react";
 
-export default function ClassroomID() {
+export default function ClassroomID({ classCode }: { classCode: string }) {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = async () => {
         try {
-            await navigator.clipboard.writeText('ABCD1234');
+            await navigator.clipboard.writeText(classCode);
             setCopied(true);
             setTimeout(() => setCopied(false), 1500); // Reset after 2 seconds
         } catch (err) {
@@ -26,7 +26,7 @@ export default function ClassroomID() {
             {/* Code Display */}
             <div className="flex items-center justify-between">
                 <div className="flex-1">
-                    <h1 className="text-lg text-blue-600">ABCD1234</h1>
+                    <h1 className="text-lg text-blue-600">{classCode}</h1>
                 </div>
                 <button
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"

@@ -5,12 +5,12 @@ import { usePathname, useParams } from "next/navigation";
 import { cn } from "@/lib/utils"; // ฟังก์ชันช่วยจัดการ class (มาตรฐาน shadcn)
 
 // กำหนด type สำหรับบทบาท เผื่อรับผ่าน props 
-export type Role = "creator" | "manager" | "member";
+export type Role = "creator" | "manager" | "student";
 
 const tabs = [
     { name: "ฟอรัม", href: "/forum" }, // หน้าหลักของห้องเรียน [id]
     { name: "งานของชั้นเรียน", href: "/assignment" },
-    { name: "คะแนน", href: "/grade", hideFor: ["member"] }, // หรือจะเปลี่ยนเป็น /settings ตามโครงสร้างคุณ
+    { name: "คะแนน", href: "/grade", hideFor: ["student"] }, // หรือจะเปลี่ยนเป็น /settings ตามโครงสร้างคุณ
     { name: "สมาชิก", href: "/people" },
 ];
 
