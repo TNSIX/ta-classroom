@@ -4,10 +4,10 @@ import { createClient } from "@/utils/supabase/server";
 
 interface AssignmentLayoutProps {
     children: React.ReactNode;
-    params: {
+    params: Promise<{
         id: string;
         assignment_id: string;
-    };
+    }>;
 }
 
 export default async function AssignmentLayout({

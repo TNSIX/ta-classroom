@@ -1,7 +1,7 @@
 import PeopleTable from "@/components/classroom/people/people-table";
 import { createClient } from "@/utils/supabase/server";
 
-export default async function PeoplePage({ params }: { params: { id: string } }) {
+export default async function PeoplePage({ params }: { params: Promise<{ id: string }> }) {
     const { id: classroomId } = await params;
     const supabase = await createClient();
 

@@ -7,7 +7,7 @@ import { createClient } from "@/utils/supabase/server";
 
 export type role = "creator" | "manager" | "member" | "student";
 
-export default async function AssignmentPage({ params }: { params: { id: string } }) {
+export default async function AssignmentPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: classroomId } = await params;
     const supabase = await createClient();
 

@@ -8,7 +8,7 @@ import { createClient } from "@/utils/supabase/server";
 // กำหนด type หรือใช้จากที่ประกาศไว้แล้วได้
 export type Role = "creator" | "manager" | "member" | "student";
 
-export default async function ForumPage({ params }: { params: { id: string } }) {
+export default async function ForumPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: classroomId } = await params;
     const supabase = await createClient();
 

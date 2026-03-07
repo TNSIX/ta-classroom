@@ -7,7 +7,7 @@ export default async function SingleClassroomLayout({
     params,
 }: {
     children: React.ReactNode;
-    params: { id: string }; // รับ ID ของห้องเรียนจาก URL
+    params: Promise<{ id: string }>; // รับ ID ของห้องเรียนจาก URL
 }) {
     const { id: classroomId } = await params;
     const supabase = await createClient();

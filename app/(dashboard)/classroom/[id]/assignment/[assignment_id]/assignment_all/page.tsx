@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import AssignmentAllClient, { Student, FileItem } from "@/components/classroom/assignment/assignment-all-client";
 
-export default async function AssignmentAllPage({ params }: { params: { id: string, assignment_id: string } }) {
+export default async function AssignmentAllPage({ params }: { params: Promise<{ id: string, assignment_id: string }> }) {
     const { id: classroomId, assignment_id: assignmentId } = await params;
     const supabase = await createClient();
 

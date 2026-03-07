@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import AssignmentWorksClient from "@/components/classroom/assignment/assignment-works-client";
 import { redirect } from "next/navigation";
 
-export default async function AssignmentWorksPage({ params }: { params: { id: string, assignment_id: string } }) {
+export default async function AssignmentWorksPage({ params }: { params: Promise<{ id: string, assignment_id: string }> }) {
     const { id: classroomId, assignment_id: assignmentId } = await params;
     const supabase = await createClient();
 

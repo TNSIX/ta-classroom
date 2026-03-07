@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import AssignmentClientDetail from "@/components/classroom/assignment/assignment-client-detail";
 
-export default async function AssignmentDetailPage({ params }: { params: { id: string, assignment_id: string } }) {
+export default async function AssignmentDetailPage({ params }: { params: Promise<{ id: string, assignment_id: string }> }) {
     const { id: classroomId, assignment_id: assignmentId } = await params;
     const supabase = await createClient();
 

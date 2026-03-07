@@ -4,7 +4,7 @@ import { BarChart3, TrendingUp, TrendingDown, Activity } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 
-export default async function GradePage({ params }: { params: { id: string } }) {
+export default async function GradePage({ params }: { params: Promise<{ id: string }> }) {
     const { id: classroomId } = await params;
     const supabase = await createClient();
 
