@@ -86,15 +86,19 @@ export default function CreateClassDialog({ isOpen, onOpenChange }: CreateClassD
                                     />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="description" className="text-gray-700">
-                                        คำอธิบายชั้นเรียน
-                                    </Label>
+                                    <div className="flex justify-between items-center">
+                                        <Label htmlFor="description" className="text-gray-700">
+                                            คำอธิบายชั้นเรียน
+                                        </Label>
+                                        <span className="text-xs text-muted-foreground">{description.length}/200</span>
+                                    </div>
                                     <Textarea
                                         id="description"
                                         name="description"
                                         value={description}
                                         onChange={(e) => setDescription(e.target.value)}
                                         placeholder="พิมพ์คำอธิบายชั้นเรียนที่นี่..."
+                                        maxLength={200}
                                         className="min-h-[100px] resize-none bg-gray-50 border-gray-200 focus:bg-white focus-visible:ring-blue-600 transition-colors"
                                     />
                                 </div>
@@ -105,9 +109,9 @@ export default function CreateClassDialog({ isOpen, onOpenChange }: CreateClassD
                                             type="button"
                                             variant="outline"
                                             className={cn(
-                                                "flex-1 justify-center h-auto py-3 border transition-all hover:bg-blue-50 hover:text-blue-700",
+                                                "flex-1 justify-center h-auto py-3 border transition-all hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200",
                                                 privacy === "public"
-                                                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                                                    ? "border-blue-200 bg-blue-50 text-blue-700"
                                                     : "border-gray-200 text-gray-600 bg-transparent"
                                             )}
                                             onClick={() => setPrivacy("public")}
@@ -121,9 +125,9 @@ export default function CreateClassDialog({ isOpen, onOpenChange }: CreateClassD
                                             type="button"
                                             variant="outline"
                                             className={cn(
-                                                "flex-1 justify-center h-auto py-3 border transition-all hover:bg-blue-50 hover:text-blue-700",
+                                                "flex-1 justify-center h-auto py-3 border transition-all hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200",
                                                 privacy === "private"
-                                                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                                                    ? "border-blue-200 bg-blue-50 text-blue-700"
                                                     : "border-gray-200 text-gray-600 bg-transparent"
                                             )}
                                             onClick={() => setPrivacy("private")}

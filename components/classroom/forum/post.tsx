@@ -222,7 +222,7 @@ export function ForumPost({ id, classroomId, initialTitle, initialContent, initi
                     <h3 className="text-blue-600 font-medium break-words">
                         {title}
                     </h3>
-                    <p className="text-gray-700 mt-2 whitespace-pre-wrap break-words">
+                    <p className="text-gray-700 whitespace-pre-wrap break-words">
                         {content}
                     </p>
 

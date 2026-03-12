@@ -42,7 +42,7 @@ export default async function GradePage({ params }: { params: Promise<{ id: stri
     const assignments = (assignmentData || []).map(a => ({
         id: a.id,
         name: a.title,
-        maxScore: Number(a.points) || 100,
+        maxScore: a.points !== null && a.points !== undefined ? Number(a.points) : null,
     }));
 
     // 4. Fetch Students in Classroom
@@ -92,10 +92,14 @@ export default async function GradePage({ params }: { params: Promise<{ id: stri
 
     const students = allStudents;
 
-    // Calculate Statistics
-    const studentTotals = students.length > 0 ? students.map(student =>
-        assignments.reduce((acc, curr) => acc + (student.scores[curr.id] || 0), 0)
-    ) : [0];
+    // คำนวณสถิติจากเฉพาะงานที่มีการกำหนดคะแนน (maxScore ไม่ใช่ null)
+    const scoredAssignments = assignments.filter(a => a.maxScore !== null);
+
+    const studentTotals = students.length > 0 && scoredAssignments.length > 0
+        ? students.map(student =>
+            scoredAssignments.reduce((acc, curr) => acc + (student.scores[curr.id] || 0), 0)
+        )
+        : [];
 
     const minScore = studentTotals.length > 0 ? Math.min(...studentTotals) : 0;
     const maxScore = studentTotals.length > 0 ? Math.max(...studentTotals) : 0;

@@ -43,9 +43,9 @@ export default function AssignmentPost({ classroomId, assignmentId, initialTitle
 
     // Helper function สำหรับแยกวันที่และเวลาออกจาก ISO date
     const getInitialDateInfo = () => {
-        if (!initialDueDate) return { date: "", time: "23:59" };
+        if (!initialDueDate) return { date: "", time: "" };
         const d = new Date(initialDueDate);
-        if (isNaN(d.getTime())) return { date: "", time: "23:59" };
+        if (isNaN(d.getTime())) return { date: "", time: "" };
 
         // รูปแบบ YYYY-MM-DD
         const dateStr = d.toISOString().split('T')[0];
@@ -63,15 +63,15 @@ export default function AssignmentPost({ classroomId, assignmentId, initialTitle
     const [deleteStatus, setDeleteStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [title, setTitle] = useState(initialTitle || "ชื่องาน");
     const [dueDate, setDueDate] = useState(initDateInfo.date || "");
-    const [dueTime, setDueTime] = useState(initDateInfo.time || "23:59");
-    const [score, setScore] = useState(points ? points.toString() : "100");
+    const [dueTime, setDueTime] = useState(initDateInfo.time || "");
+    const [score, setScore] = useState(points !== undefined && points !== null && points !== 0 ? points.toString() : "");
     const [description, setDescription] = useState(initialDescription || "");
     const [files, setFiles] = useState<any[]>(initialFiles);
 
     // Edit states
     const [editTitle, setEditTitle] = useState(title);
     const [editDueDate, setEditDueDate] = useState(initDateInfo.date || "");
-    const [editDueTime, setEditDueTime] = useState(initDateInfo.time || "23:59");
+    const [editDueTime, setEditDueTime] = useState(initDateInfo.time || "");
     const [editScore, setEditScore] = useState(score);
     const [editDescription, setEditDescription] = useState(description);
     // แยกไฟล์ออกเป็น 2 ประเภท
@@ -80,6 +80,8 @@ export default function AssignmentPost({ classroomId, assignmentId, initialTitle
     const [deletedFileIds, setDeletedFileIds] = useState<string[]>([]);             // IDs ที่ถูกลบ
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    // ป้องกัน click-through เมื่อปิด dialog แล้ว click ตกมาที่ Card
+    const justClosedRef = useRef(false);
 
     const formatSize = (bytes: number) => {
         if (!bytes) return "0 KB";
@@ -128,7 +130,11 @@ export default function AssignmentPost({ classroomId, assignmentId, initialTitle
     const handleOpenChange = (open: boolean) => {
         setIsEditOpen(open);
         if (!open) {
-            setTimeout(() => setStatus('idle'), 300);
+            justClosedRef.current = true;
+            setTimeout(() => {
+                justClosedRef.current = false;
+                setStatus('idle');
+            }, 300);
         }
     };
 
@@ -141,7 +147,11 @@ export default function AssignmentPost({ classroomId, assignmentId, initialTitle
     const handleDeleteOpenChange = (open: boolean) => {
         setIsDeleteOpen(open);
         if (!open) {
-            setTimeout(() => setDeleteStatus('idle'), 300);
+            justClosedRef.current = true;
+            setTimeout(() => {
+                justClosedRef.current = false;
+                setDeleteStatus('idle');
+            }, 300);
         }
     };
 
@@ -179,7 +189,7 @@ export default function AssignmentPost({ classroomId, assignmentId, initialTitle
             editDescription,
             editDueDate,
             editDueTime,
-            editScore || "100",
+            editScore,
             deletedFileIds,
             editNewFiles
         );
@@ -194,7 +204,7 @@ export default function AssignmentPost({ classroomId, assignmentId, initialTitle
         setTitle(editTitle);
         setDueDate(editDueDate);
         setDueTime(editDueTime);
-        setScore(editScore || "100");
+        setScore(editScore);
         setDescription(editDescription);
         // update files state: เอาไฟล์ที่เหลือ + ไฟล์ใหม่เป็น placeholder
         const newFilePlaceholders = editNewFiles.map(f => ({ name: f.name, size: f.size, type: f.type || 'FILE' }));
@@ -212,6 +222,7 @@ export default function AssignmentPost({ classroomId, assignmentId, initialTitle
     };
 
     const handleClick = () => {
+        if (justClosedRef.current || isEditOpen || isDeleteOpen) return;
         router.push(`/classroom/${classroomId}/assignment/${assignmentId}/assignment_details`);
     };
 

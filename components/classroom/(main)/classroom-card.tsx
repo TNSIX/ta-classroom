@@ -30,6 +30,7 @@ interface ClassCardProps {
     id: string;
     name: string;
     description: string;
+    isPrivate?: boolean;
     creatorName: string;
     creatorFirstName?: string;
     creatorAvatarUrl?: string | null;
@@ -40,6 +41,7 @@ export default function ClassCard({
     id,
     name: initialName,
     description: initialDescription,
+    isPrivate: initialIsPrivate = false,
     creatorName,
     creatorFirstName = '',
     creatorAvatarUrl = null,
@@ -48,12 +50,12 @@ export default function ClassCard({
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [name, setName] = useState(initialName);
     const [description, setDescription] = useState(initialDescription || "");
-    const [privacy, setPrivacy] = useState("public");
+    const [privacy, setPrivacy] = useState(initialIsPrivate ? "private" : "public");
 
     // Temporary state for editing
     const [tempName, setTempName] = useState("");
     const [tempDescription, setTempDescription] = useState("");
-    const [tempPrivacy, setTempPrivacy] = useState("public");
+    const [tempPrivacy, setTempPrivacy] = useState(initialIsPrivate ? "private" : "public");
     const [status, setStatus] = useState<'idle' | 'success'>('idle');
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [deleteStatus, setDeleteStatus] = useState<'idle' | 'success'>('idle');

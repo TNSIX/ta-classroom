@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Clock, X, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, X, BookOpen } from 'lucide-react';
 
 export interface CalendarAssignment {
     id: string;
@@ -74,16 +74,6 @@ export default function CalendarView({ assignments, userRole }: CalendarViewProp
         }
     };
 
-    const getStatusLabel = (a: CalendarAssignment) => {
-        if (userRole === 'teacher') return null;
-        switch (a.submissionStatus) {
-            case 'graded': return <span className="text-xs text-purple-600 font-medium">ตรวจแล้ว</span>;
-            case 'submitted': return <span className="text-xs text-green-600 font-medium">ส่งแล้ว</span>;
-            case 'assigned': return <span className="text-xs text-green-600 font-medium">มอบหมายแล้ว</span>;
-            case 'late': return <span className="text-xs text-orange-600 font-medium">ส่งช้า</span>;
-            default: return <span className="text-xs text-blue-600 font-medium">ยังไม่ส่ง</span>;
-        }
-    };
 
     const renderCalendarDays = () => {
         const year = currentDate.getFullYear();
@@ -131,14 +121,14 @@ export default function CalendarView({ assignments, userRole }: CalendarViewProp
                         {displayAssignments.map((assignment) => (
                             <div
                                 key={assignment.id}
-                                className={`text-xs px-1.5 py-1 rounded border cursor-pointer hover:opacity-80 transition-opacity ${getChipStyle(assignment)}`}
+                                className={`text-xs px-1.5 py-1 rounded text-gray-800 border border-transparent bg-transparent hover:bg-blue-50 cursor-pointer hover:border-blue-200 hover:text-blue-600 transition-all duration-300 ease-in-out ${getChipStyle(assignment)}`}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     router.push(`/classroom/${assignment.classroomId}/assignment/${assignment.id}/assignment_details`);
                                 }}
                             >
                                 <div className="flex items-center gap-1">
-                                    <Clock size={15} className="flex-shrink-0 opacity-70" />
+                                    <Clock size={15} className="flex-shrink-0" />
                                     <span className="truncate font-medium text-sm">{assignment.title}</span>
                                 </div>
                             </div>
@@ -234,19 +224,18 @@ export default function CalendarView({ assignments, userRole }: CalendarViewProp
                                             }}
                                         >
                                             <div className="flex items-start justify-between mb-1.5 gap-2">
-                                                <div className="font-semibold text-gray-900 truncate flex-1">
+                                                <div className="text-gray-900 truncate flex-1">
                                                     {assignment.title}
                                                 </div>
                                                 <span className="text-xs px-2 py-1 rounded-full bg-white/70 text-gray-700 font-medium whitespace-nowrap border border-gray-200">
-                                                    {dueTime} น.
+                                                    ส่งก่อน {dueTime} น.
                                                 </span>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-1.5 text-sm text-gray-600 min-w-0">
-                                                    <FileText size={13} className="flex-shrink-0" />
+                                                    <BookOpen size={15} className="flex-shrink-0" />
                                                     <span className="truncate">{assignment.course}</span>
                                                 </div>
-                                                {getStatusLabel(assignment)}
                                             </div>
                                         </div>
                                     );

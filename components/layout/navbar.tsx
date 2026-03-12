@@ -86,17 +86,25 @@ export default function Navbar() {
             <nav className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
                 <div className="flex items-center text-md font-medium truncate max-w-xl text-gray-600">
                     {segments
-                        .filter(segment => !isUUID(segment) || labels[segment]) // ซ่อน UUID ที่ยังไม่มีชื่อ
-                        .map((segment, index, filteredArr) => (
-                            <React.Fragment key={segment}>
-                                <span className={index === filteredArr.length - 1 ? "text-blue-600" : ""}>
-                                    {labels[segment] || segment}
-                                </span>
-                                {index < filteredArr.length - 1 && (
-                                    <span className="mx-2 text-gray-400"><ChevronRight /></span>
-                                )}
-                            </React.Fragment>
-                        ))}
+                        .map((segment, index, arr) => {
+                            const isLoading = isUUID(segment) && !labels[segment];
+                            const displayText = labels[segment] || segment;
+
+                            return (
+                                <React.Fragment key={segment}>
+                                    {isLoading ? (
+                                        <span className="inline-block w-28 h-4 rounded-xs bg-gradient-to-r from-blue-200 via-blue-100 to-blue-200 bg-[length:200%_100%] animate-shimmer align-middle" />
+                                    ) : (
+                                        <span className={index === arr.length - 1 ? "text-blue-600" : ""}>
+                                            {displayText}
+                                        </span>
+                                    )}
+                                    {index < arr.length - 1 && (
+                                        <span className="mx-2 text-gray-400"><ChevronRight size={18} /></span>
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
                 </div>
 
                 <div className="flex items-center space-x-4">

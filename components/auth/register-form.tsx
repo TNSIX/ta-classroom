@@ -112,11 +112,11 @@ export function RegisterForm() {
                     )}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="firstName" className="text-zinc-900 font-medium dark:text-zinc-100">ชื่อ</Label>
+                            <Label htmlFor="firstName" className="text-zinc-900 font-medium dark:text-zinc-100">ชื่อ <span className="text-red-500">*</span></Label>
                             <Input id="firstName" name="firstName" className="h-11 shadow-sm focus-visible:ring-blue-600 bg-gray-50/50 dark:bg-zinc-900/50" placeholder="ชื่อ" required defaultValue={state?.firstName} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="lastName" className="text-zinc-900 font-medium dark:text-zinc-100">นามสกุล</Label>
+                            <Label htmlFor="lastName" className="text-zinc-900 font-medium dark:text-zinc-100">นามสกุล <span className="text-red-500">*</span></Label>
                             <Input id="lastName" name="lastName" className="h-11 shadow-sm focus-visible:ring-blue-600 bg-gray-50/50 dark:bg-zinc-900/50" placeholder="นามสกุล" required defaultValue={state?.lastName} />
                         </div>
                     </div>

@@ -18,7 +18,7 @@ export async function createAssignment(prevState: any, formData: FormData) {
     const description = formData.get('description')?.toString() || ''
     const dueDateStr = formData.get('dueDate')?.toString() || ''
     const dueTimeStr = formData.get('dueTime')?.toString() || ''
-    const pointsStr = formData.get('points')?.toString() || '100'
+    const pointsStr = formData.get('points')?.toString() ?? ''
     const files = formData.getAll('files') as File[]
     console.log('[Assignment] Creating:', { classroomId, title, fileCount: files.length })
 
@@ -54,7 +54,7 @@ export async function createAssignment(prevState: any, formData: FormData) {
                 title,
                 description,
                 due_date: dueDateISO,
-                points: parseInt(pointsStr, 10),
+                points: pointsStr !== '' ? parseInt(pointsStr, 10) : null,
                 created_by: user.id
             })
             .select('id')
@@ -177,7 +177,7 @@ export async function editAssignment(
                 title,
                 description,
                 due_date: dueDateISO,
-                points: parseInt(pointsStr, 10),
+                points: pointsStr !== '' ? parseInt(pointsStr, 10) : null,
             })
             .eq('id', assignmentId)
 

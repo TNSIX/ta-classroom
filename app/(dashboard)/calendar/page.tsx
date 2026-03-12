@@ -49,23 +49,25 @@ export default async function CalendarPage() {
         submissionMap[s.assignment_id] = s.status;
     });
 
-    // 5. Build assignment list for calendar
-    const calendarAssignments = (assignments || []).map((a) => {
-        const classroomName = Array.isArray(a.classrooms)
-            ? a.classrooms[0]?.name
-            : (a.classrooms as any)?.name;
+    // 5. Build assignment list for calendar (Filtering only unsubmitted work)
+    const calendarAssignments = (assignments || [])
+        .map((a) => {
+            const classroomName = Array.isArray(a.classrooms)
+                ? a.classrooms[0]?.name
+                : (a.classrooms as any)?.name;
 
-        const submissionStatus = submissionMap[a.id] || null;
+            const submissionStatus = submissionMap[a.id] || null;
 
-        return {
-            id: a.id,
-            title: a.title,
-            course: classroomName || "ไม่ระบุชั้นเรียน",
-            classroomId: a.classroom_id,
-            dueDate: a.due_date,
-            submissionStatus,
-        };
-    });
+            return {
+                id: a.id,
+                title: a.title,
+                course: classroomName || "ไม่ระบุชั้นเรียน",
+                classroomId: a.classroom_id,
+                dueDate: a.due_date,
+                submissionStatus,
+            };
+        })
+        .filter((a) => a.submissionStatus === null); // แสดงเฉพาะงานที่ยังไม่ส่ง (ยังไม่มีใน Table submissions)
 
     return (
         <div className="w-full flex justify-center">

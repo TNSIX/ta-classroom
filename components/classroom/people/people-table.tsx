@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useTransition, useState } from "react";
 import { User, MoreVertical, ShieldCheck, Mail, UserMinus, UserCog, Loader2 } from "lucide-react";
 import {
     DropdownMenu,
@@ -8,6 +8,16 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { changeMemberRole, removeMember } from "@/app/actions/people";
 
@@ -32,28 +42,78 @@ interface PeopleTableProps {
 export default function PeopleTable({ classroomId, currentRole, initialTeachers, initialStudents }: PeopleTableProps) {
     const [isPending, startTransition] = useTransition();
 
-    const handleDemoteToStudent = (userId: string) => {
-        if (!confirm("ต้องการเปลี่ยนบทบาทเป็นสมาชิกใช่หรือไม่?")) return;
-        startTransition(async () => {
-            const result = await changeMemberRole(classroomId, userId, 'student');
-            if (result?.error) alert(result.error);
+    const [dialogState, setDialogState] = useState<{
+        isOpen: boolean;
+        title: string;
+        description: string;
+        confirmText: string;
+        confirmVariant: "default" | "destructive";
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: "",
+        description: "",
+        confirmText: "ตกลง",
+        confirmVariant: "default",
+        onConfirm: () => { },
+    });
+
+    const [errorState, setErrorState] = useState<{ isOpen: boolean; message: string }>({ isOpen: false, message: "" });
+
+    const openConfirmDialog = (title: string, description: string, confirmText: string, confirmVariant: "default" | "destructive", onConfirm: () => void) => {
+        setDialogState({
+            isOpen: true,
+            title,
+            description,
+            confirmText,
+            confirmVariant,
+            onConfirm
         });
+    };
+
+    const handleDemoteToStudent = (userId: string) => {
+        openConfirmDialog(
+            "เปลี่ยนบทบาทเป็นสมาชิก",
+            "ต้องการเปลี่ยนบทบาทผู้ใช้นี้เป็นสมาชิกทั่วไปใช่หรือไม่? ผู้ใช้จะถูกถอดจากสิทธิ์ในการดูแลจัดการชั้นเรียน",
+            "เปลี่ยนบทบาท",
+            "default",
+            () => {
+                startTransition(async () => {
+                    const result = await changeMemberRole(classroomId, userId, 'student');
+                    if (result?.error) setErrorState({ isOpen: true, message: result.error });
+                });
+            }
+        );
     };
 
     const handlePromoteToManager = (userId: string) => {
-        if (!confirm("ต้องการแต่งตั้งเป็นผู้จัดการชั้นเรียนใช่หรือไม่?")) return;
-        startTransition(async () => {
-            const result = await changeMemberRole(classroomId, userId, 'manager');
-            if (result?.error) alert(result.error);
-        });
+        openConfirmDialog(
+            "แต่งตั้งเป็นผู้จัดการ",
+            "ต้องการแต่งตั้งผู้ใช้นี้เป็นผู้จัดการชั้นเรียนใช่หรือไม่? ผู้ใช้จะมีสิทธิ์ในการลบผู้เรียน กำหนดงาน และให้คะแนนได้",
+            "แต่งตั้ง",
+            "default",
+            () => {
+                startTransition(async () => {
+                    const result = await changeMemberRole(classroomId, userId, 'manager');
+                    if (result?.error) setErrorState({ isOpen: true, message: result.error });
+                });
+            }
+        );
     };
 
     const handleRemoveUser = (userId: string) => {
-        if (!confirm("ต้องการนำผู้ใช้นี้ออกจากชั้นเรียนใช่หรือไม่?")) return;
-        startTransition(async () => {
-            const result = await removeMember(classroomId, userId);
-            if (result?.error) alert(result.error);
-        });
+        openConfirmDialog(
+            "นำออกจากชั้นเรียน",
+            "ต้องการนำผู้ใช้นี้ออกจากชั้นเรียนใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้ และข้อมูลผลการเรียนของผู้ใช้ในชั้นนี้อาจสูญหาย",
+            "ลบออกจากชั้น",
+            "destructive",
+            () => {
+                startTransition(async () => {
+                    const result = await removeMember(classroomId, userId);
+                    if (result?.error) setErrorState({ isOpen: true, message: result.error });
+                });
+            }
+        );
     };
 
     return (
@@ -178,6 +238,50 @@ export default function PeopleTable({ classroomId, currentRole, initialTeachers,
                     </div>
                 )}
             </div>
+
+            {/* Confirm Dialog */}
+            <AlertDialog open={dialogState.isOpen} onOpenChange={(open) => setDialogState(prev => ({ ...prev, isOpen: open }))}>
+                <AlertDialogContent className="sm:max-w-[425px]">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className={dialogState.confirmVariant === "destructive" ? "text-red-600 text-xl" : "text-blue-600 text-xl"}>
+                            {dialogState.title}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-gray-600 text-sm mt-2">
+                            {dialogState.description}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="mt-6 gap-2 sm:gap-0 space-x-4">
+                        <AlertDialogCancel className="mt-0">ยกเลิก</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={dialogState.onConfirm}
+                            className={dialogState.confirmVariant === "destructive" ? "bg-red-600 hover:bg-red-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}
+                        >
+                            {dialogState.confirmText}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Error Dialog */}
+            <AlertDialog open={errorState.isOpen} onOpenChange={(open) => setErrorState(prev => ({ ...prev, isOpen: open }))}>
+                <AlertDialogContent className="sm:max-w-[400px]">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-red-600 text-xl font-semibold">พบข้อผิดพลาด</AlertDialogTitle>
+                        <AlertDialogDescription className="text-gray-600 text-base mt-2">
+                            {errorState.message}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="mt-6">
+                        <AlertDialogAction
+                            onClick={() => setErrorState(prev => ({ ...prev, isOpen: false }))}
+                            className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
+                        >
+                            ตกลง
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
         </div>
     );
 }

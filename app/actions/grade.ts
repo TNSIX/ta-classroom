@@ -2,28 +2,13 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { validateClassroomAccess, validateAssignmentContext } from '@/lib/security'
 
 export async function saveGrades(classroomId: string, assignmentId: string, gradesData: { studentId: string, score: number | null }[]) {
-    const supabase = await createClient()
-
-    // 1. ตรวจสอบ User
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-        return { error: 'ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่' }
-    }
-
     try {
-        // 2. ตรวจสอบสิทธิ์ว่ามีสิทธิ์ตรวจงานไหม (ต้องเป็น creator หรือ manager)
-        const { data: membership } = await supabase
-            .from('classroom_members')
-            .select('role')
-            .eq('classroom_id', classroomId)
-            .eq('user_id', user.id)
-            .single()
-
-        if (!membership || !['creator', 'manager'].includes(membership.role)) {
-            return { error: 'คุณไม่มีสิทธิ์ตรวจงานในชั้นเรียนนี้' }
-        }
+        // 1. & 2. ตรวจสอบสิทธิ์ (ครู/TA) และตรวจสอบว่างานอยู่ที่ห้องนี้จริง
+        const { user, supabase } = await validateClassroomAccess(classroomId)
+        await validateAssignmentContext(assignmentId, classroomId)
 
         // 3. วนลูปบันทึกคะแนน
         for (const data of gradesData) {

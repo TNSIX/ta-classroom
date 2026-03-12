@@ -30,11 +30,25 @@ export async function signup(prevState: any, formData: FormData) {
     const data = {
         email: formData.get('email') as string,
         password: formData.get('password') as string,
-        firstname: formData.get('firstName') as string,
-        lastname: formData.get('lastName') as string,
+        firstname: (formData.get('firstName') as string)?.trim(),
+        lastname: (formData.get('lastName') as string)?.trim(),
     }
 
     const confirmPassword = formData.get('confirmPassword') as string
+
+    // Validate required fields
+    if (!data.firstname) {
+        return { error: 'กรุณากรอกชื่อ', firstName: data.firstname, lastName: data.lastname, email: data.email }
+    }
+    if (!data.lastname) {
+        return { error: 'กรุณากรอกนามสกุล', firstName: data.firstname, lastName: data.lastname, email: data.email }
+    }
+    if (!data.email) {
+        return { error: 'กรุณากรอกอีเมล', firstName: data.firstname, lastName: data.lastname, email: data.email }
+    }
+    if (!data.password) {
+        return { error: 'กรุณากรอกรหัสผ่าน', firstName: data.firstname, lastName: data.lastname, email: data.email }
+    }
     if (data.password !== confirmPassword) {
         return { error: 'รหัสผ่านไม่ตรงกัน', firstName: data.firstname, lastName: data.lastname, email: data.email }
     }

@@ -336,6 +336,8 @@ export async function editClassroom(prevState: any, formData: FormData) {
     const id = formData.get('id')?.toString() || ''
     const name = formData.get('name')?.toString() || ''
     const description = formData.get('description')?.toString() || ''
+    const privacy = formData.get('privacy')?.toString() || 'public'
+    const isPrivate = privacy === 'private'
 
     if (!id || !name.trim()) {
         return { error: 'ข้อมูลไม่ครบถ้วน' }
@@ -344,7 +346,11 @@ export async function editClassroom(prevState: any, formData: FormData) {
     try {
         const { error } = await supabase
             .from('classrooms')
-            .update({ name, description })
+            .update({ 
+                name, 
+                description,
+                is_private: isPrivate
+            })
             .eq('id', id)
             .eq('created_by', user.id) // Security check to ensure only creator can edit
 

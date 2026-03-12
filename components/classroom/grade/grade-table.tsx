@@ -6,8 +6,11 @@ interface GradeTableProps {
 }
 
 export default function GradeTable({ assignments, students }: GradeTableProps) {
-    // คำนวณคะแนนเต็มรวมทุกงาน
-    const totalMaxScore = assignments.reduce((acc, curr) => acc + (curr.maxScore || 0), 0);
+    // งานที่มีการกำหนดคะแนนจริง (maxScore ไม่ใช่ null)
+    const scoredAssignments = assignments.filter(a => a.maxScore !== null);
+
+    // คะแนนเต็มรวมเฉพาะงานที่มีคะแนน
+    const totalMaxScore = scoredAssignments.reduce((acc, curr) => acc + (curr.maxScore || 0), 0);
 
     return (
         <div className="w-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -22,23 +25,30 @@ export default function GradeTable({ assignments, students }: GradeTableProps) {
                                 <th key={assignment.id} className="px-6 py-4 font-medium text-center whitespace-nowrap min-w-[120px]">
                                     <div className="flex flex-col items-center">
                                         <span className="text-gray-800">{assignment.name}</span>
-                                        <span className="text-sm text-gray-500 font-normal">({assignment.maxScore} คะแนน)</span>
+                                        {assignment.maxScore !== null ? (
+                                            <span className="text-sm text-gray-500 font-normal">({assignment.maxScore} คะแนน)</span>
+                                        ) : (
+                                            <span className="text-sm text-gray-500 font-normal">ไม่มีการกำหนดคะแนน</span>
+                                        )}
                                     </div>
                                 </th>
                             ))}
                             <th className="px-6 py-4 font-medium text-center whitespace-nowrap min-w-[120px] bg-gray-50 sticky right-0 z-10 border-l border-gray-200">
                                 <div className="flex flex-col items-center">
                                     <span className="text-gray-800">รวม</span>
-                                    <span className="text-xs text-gray-500 font-normal">({totalMaxScore} คะแนน)</span>
+                                    {totalMaxScore > 0 ? (
+                                        <span className="text-xs text-gray-500 font-normal">({totalMaxScore} คะแนน)</span>
+                                    ) : (
+                                        <span className="text-xs text-gray-400 font-normal italic">-</span>
+                                    )}
                                 </div>
                             </th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                         {students.map((student) => {
-                            const totalScore = assignments.reduce((acc, curr) => acc + (student.scores[curr.id] || 0), 0);
-                            const totalMax = assignments.reduce((acc, curr) => acc + curr.maxScore, 0);
-                            const percentage = Math.round((totalScore / totalMax) * 100);
+                            // รวมเฉพาะงานที่มีการกำหนดคะแนน
+                            const totalScore = scoredAssignments.reduce((acc, curr) => acc + (student.scores[curr.id] || 0), 0);
 
                             return (
                                 <tr key={student.id} className="hover:bg-gray-50 transition-colors">
@@ -54,7 +64,7 @@ export default function GradeTable({ assignments, students }: GradeTableProps) {
                                         </td>
                                     ))}
                                     <td className="px-6 py-4 text-center font-semibold text-blue-600 sticky right-0 bg-white group-hover:bg-gray-50 z-10 border-l border-gray-200">
-                                        {totalScore} / {totalMax}
+                                        {totalMaxScore > 0 ? `${totalScore} / ${totalMaxScore}` : "-"}
                                     </td>
                                 </tr>
                             );

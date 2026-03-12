@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { User, LogOut } from 'lucide-react';
+import { User, LogOut, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { createClient } from '@/utils/supabase/client';
@@ -10,6 +10,7 @@ import { logout } from '@/app/(auth)/actions';
 
 export default function UserMenu() {
     const [user, setUser] = React.useState<any>(null);
+    const [isLoggingOut, startTransition] = React.useTransition();
     const supabase = createClient();
 
     React.useEffect(() => {
@@ -56,16 +57,18 @@ export default function UserMenu() {
                         <p className="text-sm text-gray-500 truncate">{email}</p>
                     </div>
                 </div>
-                <form action={logout} className="p-2 bg-white rounded-b-md">
+                <div className="p-2 bg-white rounded-b-md">
                     <Button
-                        type="submit"
+                        type="button"
                         variant="ghost"
-                        className="w-full flex items-center justify-start gap-3 hover:text-red-700 hover:bg-red-50 border border-transparent hover:border-red-200 text-md"
+                        onClick={() => startTransition(async () => { await logout(); })}
+                        disabled={isLoggingOut}
+                        className="w-full flex items-center justify-start gap-3 hover:text-red-700 hover:bg-red-50 border border-transparent hover:border-red-200 text-md disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                        <LogOut size={18} />
-                        ออกจากระบบ
+                        {isLoggingOut ? <Loader2 size={18} className="animate-spin" /> : <LogOut size={18} />}
+                        {isLoggingOut ? "กำลังออกจากระบบ..." : "ออกจากระบบ"}
                     </Button>
-                </form>
+                </div>
             </PopoverContent>
         </Popover>
     );

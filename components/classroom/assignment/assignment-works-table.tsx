@@ -100,7 +100,7 @@ export default function AssignmentWorksTable({ totalScore = 10, works, onScoreCh
                                     {work.submittedAt || "-"}
                                 </TableCell>
                                 <TableCell className="text-md">
-                                    {totalScore ? (
+                                    {totalScore !== null ? (
                                         <div className="flex items-center gap-2">
                                             <Input
                                                 type="number"
@@ -109,7 +109,7 @@ export default function AssignmentWorksTable({ totalScore = 10, works, onScoreCh
                                                 onChange={(e) => {
                                                     const val = e.target.value;
                                                     let num = val === "" ? null : Number(val);
-                                                    if (num !== null && totalScore && num > totalScore) {
+                                                    if (num !== null && num > totalScore) {
                                                         num = totalScore;
                                                     }
                                                     onScoreChange(work.id, num);
@@ -122,7 +122,7 @@ export default function AssignmentWorksTable({ totalScore = 10, works, onScoreCh
                                             <span className="text-gray-400">/ {totalScore}</span>
                                         </div>
                                     ) : (
-                                        <span className="text-gray-400 italic">ไม่ได้กำหนดคะแนน</span>
+                                        <span className="text-gray-400 italic">ไม่มีคะแนน</span>
                                     )}
                                 </TableCell>
                             </TableRow>

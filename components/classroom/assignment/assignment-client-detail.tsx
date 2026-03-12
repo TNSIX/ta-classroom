@@ -59,7 +59,7 @@ export default function AssignmentClientDetail({ classroomId, assignmentId, role
     const [title, setTitle] = useState(assignment.title);
     const [dueDate, setDueDate] = useState(assignment.dueDate || "");
     const [dueTime, setDueTime] = useState(assignment.dueTime || "");
-    const [score, setScore] = useState(assignment.score.toString());
+    const [score, setScore] = useState(assignment.score !== null && assignment.score !== undefined && assignment.score !== 0 ? assignment.score.toString() : "");
     const [description, setDescription] = useState(assignment.description || "");
     const [files, setFiles] = useState<any[]>(initialFiles);
 

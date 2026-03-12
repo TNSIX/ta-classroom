@@ -16,6 +16,7 @@ export default async function ClassroomPage() {
                 name,
                 description,
                 join_code,
+                is_private,
                 profiles:created_by (
                     first_name,
                     last_name,
@@ -35,6 +36,7 @@ export default async function ClassroomPage() {
             id: classData?.id,
             name: classData?.name || 'ไม่มีชื่อชั้นเรียน',
             description: classData?.description || '',
+            isPrivate: classData?.is_private || false,
             creatorName: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 'ไม่ระบุชื่อผู้สร้าง',
             creatorFirstName: profile?.first_name || '',
             creatorAvatarUrl: profile?.avatar_url || null,
@@ -59,6 +61,7 @@ export default async function ClassroomPage() {
                                     id={cls.id}
                                     name={cls.name}
                                     description={cls.description}
+                                    isPrivate={cls.isPrivate}
                                     creatorName={cls.creatorName}
                                     creatorFirstName={cls.creatorFirstName}
                                     creatorAvatarUrl={cls.creatorAvatarUrl}

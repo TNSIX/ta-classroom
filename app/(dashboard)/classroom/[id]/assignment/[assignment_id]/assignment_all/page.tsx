@@ -125,7 +125,7 @@ export default async function AssignmentAllPage({ params }: { params: Promise<{ 
         <AssignmentAllClient
             classroomId={classroomId}
             assignmentId={assignmentId}
-            totalScore={assignment.points || 100}
+            totalScore={assignment.points ?? null}
             initialStudents={mappedStudents}
         />
     );

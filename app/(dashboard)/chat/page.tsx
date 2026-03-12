@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Plus, ThumbsUp, ThumbsDown, Copy, Square, Check, Cpu, Paperclip, X, FileText } from "lucide-react";
+import { Send, Plus, ThumbsUp, ThumbsDown, Copy, Square, Check, Cpu, Paperclip, X, FileText, MessageCircle } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { sendChatMessage } from "@/app/actions/chat";
@@ -26,22 +26,54 @@ export default function ChatPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isTyping, setIsTyping] = useState(false);
     const [userName, setUserName] = useState("...");
-    const [selectedModel, setSelectedModel] = useState("llama-3.3-70b-versatile");
+    const [selectedModel, setSelectedModel] = useState("openai/gpt-oss-120b");
     const [attachment, setAttachment] = useState<{ name: string, content: string } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const content = event.target?.result as string;
-            setAttachment({ name: file.name, content });
-        };
-        reader.readAsText(file);
+        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+            try {
+                // สำหรับ PDF ฝั่ง Client โดยใช้เครื่องมือแบบไม่ต้องมี worker เต็มรูปแบบ
+                // ขออนุญาตใช้ FileReader พื้นฐานก่อน ถ้า API รองรับ
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    const typedarray = new Uint8Array(event.target?.result as ArrayBuffer);
+                    try {
+                        // Dynamically import pdfjs-dist
+                        const pdfjsLib = await import('pdfjs-dist');
+                        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+
+                        const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                        let fullText = '';
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const textContent = await page.getTextContent();
+                            const pageText = textContent.items.map((item: any) => item.str).join(' ');
+                            fullText += pageText + '\n';
+                        }
+                        setAttachment({ name: file.name, content: fullText.trim() });
+                    } catch (err) {
+                        console.error("Failed to parse PDF", err);
+                        alert("ไม่สามารถอ่านเนื้อหาของไฟล์ PDF ได้");
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            } catch (error) {
+                console.error("Error setting up PDF", error);
+            }
+        } else {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const content = event.target?.result as string;
+                setAttachment({ name: file.name, content });
+            };
+            reader.readAsText(file);
+        }
 
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
@@ -228,7 +260,7 @@ export default function ChatPage() {
                                         {msg.role === 'user' ? (
                                             <div className="flex flex-col gap-1">
                                                 {msg.attachment && (
-                                                    <div className="flex items-center gap-2 bg-blue-700/50 p-2 rounded-lg text-sm max-w-full overflow-hidden mb-1">
+                                                    <div className="flex items-center gap-2 bg-blue-700/50 p-2 rounded-lg text-sm max-w-full overflow-hidden">
                                                         <FileText size={16} className="shrink-0" />
                                                         <span className="truncate">{msg.attachment.name}</span>
                                                     </div>
@@ -240,22 +272,25 @@ export default function ChatPage() {
                                                 <ReactMarkdown
                                                     remarkPlugins={[remarkGfm]}
                                                     components={{
-                                                        a: ({ node, ...props }) => <a className="text-blue-600 hover:underline" target="_blank" {...props} />,
-                                                        p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-                                                        ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-2" {...props} />,
-                                                        ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-2" {...props} />,
-                                                        li: ({ node, ...props }) => <li className="mb-1" {...props} />,
-                                                        h1: ({ node, ...props }) => <h1 className="text-xl font-bold mt-4 mb-2" {...props} />,
-                                                        h2: ({ node, ...props }) => <h2 className="text-lg font-bold mt-3 mb-2" {...props} />,
-                                                        h3: ({ node, ...props }) => <h3 className="text-md font-bold mt-2 mb-1" {...props} />,
+                                                        a: ({ node, ...props }) => <a className="text-blue-600 hover:text-blue-800 hover:underline transition-colors" target="_blank" {...props} />,
+                                                        p: ({ node, ...props }) => <p className="mb-4 leading-relaxed text-gray-800 last:mb-0" {...props} />,
+                                                        ul: ({ node, ...props }) => <ul className="list-disc pl-6 mb-4 text-gray-800 space-y-1" {...props} />,
+                                                        ol: ({ node, ...props }) => <ol className="list-decimal pl-6 mb-4 text-gray-800 space-y-1" {...props} />,
+                                                        li: ({ node, ...props }) => <li className="mb-1 marker:text-gray-500" {...props} />,
+                                                        h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mt-6 mb-4 text-gray-900" {...props} />,
+                                                        h2: ({ node, ...props }) => <h2 className="text-xl font-semibold mt-5 mb-3 text-gray-900 border-b pb-1" {...props} />,
+                                                        h3: ({ node, ...props }) => <h3 className="text-lg font-medium mt-4 mb-2 text-gray-900" {...props} />,
                                                         strong: ({ node, ...props }) => <strong className="font-semibold text-gray-900" {...props} />,
-                                                        table: ({ node, ...props }) => <div className="overflow-x-auto my-2"><table className="border-collapse border border-gray-200 w-full text-sm" {...props} /></div>,
-                                                        th: ({ node, ...props }) => <th className="border border-gray-200 bg-gray-50 px-3 py-2 text-left font-semibold text-gray-900" {...props} />,
-                                                        td: ({ node, ...props }) => <td className="border border-gray-200 px-3 py-2" {...props} />,
+                                                        blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4" {...props} />,
+                                                        table: ({ node, ...props }) => <div className="overflow-x-auto my-4 rounded-lg border border-gray-200"><table className="min-w-full divide-y divide-gray-200 text-sm" {...props} /></div>,
+                                                        thead: ({ node, ...props }) => <thead className="bg-gray-50 text-gray-700" {...props} />,
+                                                        tbody: ({ node, ...props }) => <tbody className="divide-y divide-gray-200 bg-white" {...props} />,
+                                                        th: ({ node, ...props }) => <th className="px-4 py-3 text-left font-semibold text-gray-900" {...props} />,
+                                                        td: ({ node, ...props }) => <td className="px-4 py-3 text-gray-700" {...props} />,
                                                         code: ({ node, inline, ...props }: any) =>
                                                             inline
-                                                                ? <code className="bg-gray-100 text-red-500 px-1 py-0.5 rounded text-xs font-mono" {...props} />
-                                                                : <code className="block bg-gray-900 text-gray-100 p-3 rounded-md text-xs font-mono overflow-x-auto my-2" {...props} />
+                                                                ? <code className="bg-gray-100 text-blue-600 px-1.5 py-0.5 rounded-md text-[0.85em] font-mono border border-gray-200" {...props} />
+                                                                : <code className="block bg-[#111827] text-gray-300 p-4 rounded-xl text-[0.9em] font-mono overflow-x-auto my-4 shadow-sm" {...props} />
                                                     }}
                                                 >
                                                     {msg.text}
@@ -266,8 +301,9 @@ export default function ChatPage() {
 
                                     {/* Feedback Buttons for Bot */}
                                     {msg.role === 'bot' && !msg.isTyping && (
-                                        <div className="flex items-center gap-2 px-2 animate-in fade-in duration-300">
-                                            <Button
+                                        <div className="flex items-start gap-2 animate-in fade-in duration-300">
+
+                                            {/* <Button
                                                 variant="ghost"
                                                 size="sm"
                                                 className={`h-8 w-8 p-0 rounded-full hover:bg-gray-100 ${msg.feedback === 'like' ? 'text-green-600 bg-green-50' : 'text-gray-400'}`}
@@ -282,7 +318,7 @@ export default function ChatPage() {
                                                 onClick={() => handleFeedback(msg.id, 'dislike')}
                                             >
                                                 <ThumbsDown size={14} />
-                                            </Button>
+                                            </Button> */}
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
@@ -361,14 +397,14 @@ export default function ChatPage() {
                                         onClick={handleNewChat}
                                         title="แชทใหม่"
                                     >
-                                        <Plus size={20} />
+                                        <MessageCircle size={20} />
                                     </Button>
                                 </div>
                                 <input
                                     type="file"
                                     ref={fileInputRef}
                                     className="hidden"
-                                    accept=".txt,.js,.jsx,.ts,.tsx,.json,.md,.csv,.sql,.html,.css"
+                                    accept=".txt,.js,.jsx,.ts,.tsx,.json,.md,.csv,.sql,.html,.css,.pdf,application/pdf"
                                     onChange={handleFileSelect}
                                 />
                                 <Button
@@ -389,10 +425,11 @@ export default function ChatPage() {
                                 <Select value={selectedModel} onValueChange={setSelectedModel} disabled={isTyping}>
                                     <SelectTrigger className="h-10 border-0 hover:bg-black/5 dark:hover:bg-white/10 rounded-full shrink-0 shadow-none focus:ring-0 transition-colors text-gray-600 dark:text-gray-300 px-4">
                                         <div className="flex items-center gap-1">
-                                            <SelectValue defaultValue="llama-3.3-70b-versatile" placeholder="Llama 3.3 70B" />
+                                            <SelectValue defaultValue="openai/gpt-oss-120b" placeholder="GPT-OSS 120B" />
                                         </div>
                                     </SelectTrigger>
                                     <SelectContent position="popper" sideOffset={3} className="rounded-xl shadow-lg border-gray-100 p-1">
+                                        <SelectItem value="openai/gpt-oss-120b" className="rounded-lg py-2.5 cursor-pointer text-sm font-medium focus:bg-blue-50 focus:text-blue-700 transition-colors">GPT-OSS 120B</SelectItem>
                                         <SelectItem value="llama-3.3-70b-versatile" className="rounded-lg py-2.5 cursor-pointer text-sm font-medium focus:bg-blue-50 focus:text-blue-700 transition-colors">Llama 3.3 70B</SelectItem>
                                         <SelectItem value="llama-3.1-8b-instant" className="rounded-lg py-2.5 cursor-pointer text-sm font-medium focus:bg-blue-50 focus:text-blue-700 transition-colors">Llama 3.1 8B</SelectItem>
                                     </SelectContent>

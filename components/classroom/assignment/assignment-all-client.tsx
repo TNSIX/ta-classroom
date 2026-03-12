@@ -42,7 +42,7 @@ export interface Student {
 interface AssignmentAllClientProps {
     classroomId: string;
     assignmentId: string;
-    totalScore: number;
+    totalScore: number | null;
     initialStudents: Student[];
 }
 
@@ -141,9 +141,6 @@ export default function AssignmentAllClient({ classroomId, assignmentId, totalSc
                         กลับหน้ารวมงาน
                     </Button>
                 </Link>
-                <div className="text-sm text-gray-500 ml-auto">
-                    คะแนนเต็ม: {totalScore} คะแนน
-                </div>
             </div>
 
             {/* Main Content Grid */}
@@ -212,29 +209,32 @@ export default function AssignmentAllClient({ classroomId, assignmentId, totalSc
                                         <div className="flex items-center gap-1.5 mt-1">
                                             {getStatusIcon(student.status)}
                                             <span className="text-sm text-gray-500">{getStatusText(student.status)}</span>
-                                            {student.submittedAt && (
-                                                <span className="text-xs text-gray-400 ml-1">({student.submittedAt})</span>
-                                            )}
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1 mr-4" onClick={(e) => e.stopPropagation()}>
-                                        <Input
-                                            type="number"
-                                            className="w-12 h-8 text-center px-1 text-md remove-arrow bg-white focus:bg-white"
-                                            value={student.score !== null ? student.score : ""}
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-                                                let num = val === "" ? null : Number(val);
-                                                if (num !== null && totalScore && num > totalScore) {
-                                                    num = totalScore;
-                                                }
-                                                handleScoreChange(student.id, num);
-                                            }}
-                                            placeholder="-"
-                                            max={totalScore}
-                                            disabled={isPending}
-                                        />
-                                        <span className="text-md text-gray-400 w-3">/{totalScore || '-'}</span>
+                                        {totalScore !== null ? (
+                                            <>
+                                                <Input
+                                                    type="number"
+                                                    className="w-12 h-8 text-center px-1 text-md remove-arrow bg-white focus:bg-white"
+                                                    value={student.score !== null ? student.score : ""}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        let num = val === "" ? null : Number(val);
+                                                        if (num !== null && num > totalScore) {
+                                                            num = totalScore;
+                                                        }
+                                                        handleScoreChange(student.id, num);
+                                                    }}
+                                                    placeholder="-"
+                                                    max={totalScore}
+                                                    disabled={isPending}
+                                                />
+                                                <span className="text-md text-gray-400">/ {totalScore}</span>
+                                            </>
+                                        ) : (
+                                            <span className="text-sm text-gray-400 italic">ไม่มีคะแนน</span>
+                                        )}
                                     </div>
                                 </button>
                             ))}
