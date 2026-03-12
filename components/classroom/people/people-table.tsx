@@ -8,6 +8,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { changeMemberRole, removeMember } from "@/app/actions/people";
 
 export type Role = "creator" | "manager" | "student";
@@ -15,6 +16,8 @@ export type Role = "creator" | "manager" | "student";
 interface Member {
     id: string;
     name: string;
+    firstName?: string;
+    avatarUrl?: string | null;
     email?: string;
     role: string;
 }
@@ -80,9 +83,12 @@ export default function PeopleTable({ classroomId, currentRole, initialTeachers,
                     {initialTeachers.map((teacher, index) => (
                         <div key={teacher.id} className="p-4 hover:bg-gray-50 transition-colors flex items-center justify-between group">
                             <div className="flex items-center gap-4">
-                                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white ${teacher.role === 'creator' ? 'bg-blue-600' : 'bg-blue-400'}`}>
-                                    {teacher.role === 'creator' ? <ShieldCheck size={24} /> : <UserCog size={24} />}
-                                </div>
+                                <Avatar className="w-12 h-12">
+                                    <AvatarImage src={teacher.avatarUrl || undefined} alt={teacher.name} className="object-cover" />
+                                    <AvatarFallback className={`text-white text-sm font-semibold ${teacher.role === 'creator' ? 'bg-blue-600' : 'bg-blue-400'}`}>
+                                        {teacher.firstName ? teacher.firstName.charAt(0).toUpperCase() : (teacher.role === 'creator' ? <ShieldCheck size={20} /> : <UserCog size={20} />)}
+                                    </AvatarFallback>
+                                </Avatar>
                                 <div>
                                     <div className="font-medium text-gray-900 text-md">{teacher.name}</div>
                                     <div className="text-sm text-gray-400 flex items-center gap-2">
@@ -133,9 +139,12 @@ export default function PeopleTable({ classroomId, currentRole, initialTeachers,
                         {initialStudents.map((student) => (
                             <div key={student.id} className="p-4 hover:bg-gray-50 transition-colors flex items-center justify-between group">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
-                                        <User size={24} />
-                                    </div>
+                                    <Avatar className="w-12 h-12">
+                                        <AvatarImage src={student.avatarUrl || undefined} alt={student.name} className="object-cover" />
+                                        <AvatarFallback className="bg-gray-100 text-gray-600 text-sm font-semibold">
+                                            {student.firstName ? student.firstName.charAt(0).toUpperCase() : <User size={20} />}
+                                        </AvatarFallback>
+                                    </Avatar>
                                     <div>
                                         <div className="font-medium text-gray-900">{student.name}</div>
                                         <div className="text-sm text-gray-400 flex items-center gap-1">สมาชิกในชั้นเรียน</div>

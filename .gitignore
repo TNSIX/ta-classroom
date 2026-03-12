@@ -46,3 +46,4 @@ fix_approve_rls.sql
 fix_join_requests_permissions.sql
 fix_submissions_constraint.sql
 supabase_schema.sql
+add_avatar_url_to_profiles.sql

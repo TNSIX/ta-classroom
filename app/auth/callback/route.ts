@@ -16,11 +16,13 @@ export async function GET(request: Request) {
             if (user) {
                 const firstName = user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || user.user_metadata?.name?.split(' ')[0] || '';
                 const lastName = user.user_metadata?.last_name || (user.user_metadata?.full_name?.split(' ').slice(1).join(' ')) || '';
+                const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
 
                 await supabase.from('profiles').upsert({
                     id: user.id,
                     first_name: firstName,
                     last_name: lastName,
+                    avatar_url: avatarUrl,
                 }, { onConflict: 'id' });
             }
 

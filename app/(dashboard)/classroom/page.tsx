@@ -18,7 +18,8 @@ export default async function ClassroomPage() {
                 join_code,
                 profiles:created_by (
                     first_name,
-                    last_name
+                    last_name,
+                    avatar_url
                 )
             )
         `)
@@ -35,6 +36,8 @@ export default async function ClassroomPage() {
             name: classData?.name || 'ไม่มีชื่อชั้นเรียน',
             description: classData?.description || '',
             creatorName: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 'ไม่ระบุชื่อผู้สร้าง',
+            creatorFirstName: profile?.first_name || '',
+            creatorAvatarUrl: profile?.avatar_url || null,
             role: cm.role as Role
         };
     }) || [];
@@ -57,6 +60,8 @@ export default async function ClassroomPage() {
                                     name={cls.name}
                                     description={cls.description}
                                     creatorName={cls.creatorName}
+                                    creatorFirstName={cls.creatorFirstName}
+                                    creatorAvatarUrl={cls.creatorAvatarUrl}
                                     role={cls.role}
                                 />
                             ))

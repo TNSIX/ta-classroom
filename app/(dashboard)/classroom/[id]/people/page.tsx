@@ -28,7 +28,7 @@ export default async function PeoplePage({ params }: { params: Promise<{ id: str
         .select(`
             user_id,
             role,
-            profiles:user_id ( id, first_name, last_name )
+            profiles:user_id ( id, first_name, last_name, avatar_url )
         `)
         .eq('classroom_id', classroomId);
 
@@ -37,6 +37,8 @@ export default async function PeoplePage({ params }: { params: Promise<{ id: str
         return {
             id: m.user_id,
             name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 'ไม่ระบุชื่อ',
+            firstName: profile?.first_name || '',
+            avatarUrl: profile?.avatar_url || null,
             role: m.role,
         };
     });

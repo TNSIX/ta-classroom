@@ -20,6 +20,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { editClassroom, deleteClassroom } from '@/app/actions/classroom';
 
@@ -30,6 +31,8 @@ interface ClassCardProps {
     name: string;
     description: string;
     creatorName: string;
+    creatorFirstName?: string;
+    creatorAvatarUrl?: string | null;
     role?: Role;
 }
 
@@ -38,6 +41,8 @@ export default function ClassCard({
     name: initialName,
     description: initialDescription,
     creatorName,
+    creatorFirstName = '',
+    creatorAvatarUrl = null,
     role = "creator"
 }: ClassCardProps) {
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -138,13 +143,18 @@ export default function ClassCard({
                     </div>
                 )}
 
-                {/* Left: Image Placeholder (Circle) */}
+                {/* Left: Avatar */}
                 <div className="flex-shrink-0 flex items-center">
-                    <img
-                        src="https://api.dicebear.com/9.x/notionists/svg?backgroundColor=b6e3f4"
-                        alt="Class Avatar"
-                        className="w-20 h-20 rounded-full object-cover border border-gray-100"
-                    />
+                    <Avatar className="w-20 h-20">
+                        <AvatarImage
+                            src={creatorAvatarUrl || undefined}
+                            alt={creatorName}
+                            className="object-cover"
+                        />
+                        <AvatarFallback className="bg-blue-100 text-blue-700 text-2xl font-semibold">
+                            {creatorFirstName ? creatorFirstName.charAt(0).toUpperCase() : <User size={32} />}
+                        </AvatarFallback>
+                    </Avatar>
                 </div>
 
                 {/* Right: Content */}
@@ -155,7 +165,7 @@ export default function ClassCard({
                     </h3>
 
                     {/* Description */}
-                    <p className="text-xs text-gray-400 mt-1 mb-2 line-clamp-2 overflow-hidden text-ellipsis">
+                    <p className="text-xs text-gray-400 mt-1 mb-2 break-words whitespace-pre-wrap line-clamp-4">
                         {description}
                     </p>
 

@@ -210,8 +210,8 @@ export default function ChatPage() {
                     {/* Greeting Header - Fades out */}
                     <div className={`transition-all duration-700 ease-in-out flex flex-col items-start justify-start gap-2 ${isChatMode ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100'}`}>
                         <div className="flex gap-2">
-                            <h1 className="text-2xl font-black select-none text-gray-700">สวัสดี คุณ</h1>
-                            <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-800 select-none uppercase">{userName}</h2>
+                            <h1 className="text-2xl font-black select-none text-gray-700">สวัสดีคุณ</h1>
+                            <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-800 select-none">{userName}</h2>
                         </div>
                         <h3 className="text-4xl font-black select-none text-gray-700">มีอะไรให้ช่วยไหม ?</h3>
                     </div>

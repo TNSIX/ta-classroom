@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { User, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronRight } from 'lucide-react';
 import ClassMenu from './class-menu';
 import InboxMenu from './inbox-menu';
 import UserMenu from './user-menu';
@@ -11,13 +11,14 @@ import { createClient } from '@/utils/supabase/client';
 
 export default function Navbar() {
     const pathname = usePathname();
-
     const segments = decodeURIComponent(pathname).split('/').filter(Boolean);
     const [dynamicLabels, setDynamicLabels] = useState<{ [key: string]: string }>({});
 
-    // ฟังก์ชันตรวจสอบว่าเป็น UUID หรือไม่
+    // ใช้ ref เก็บ UUID ที่ fetch ไปแล้ว เพื่อไม่ต้องใส่ dynamicLabels ใน dependency array
+    const fetchedIds = useRef<Set<string>>(new Set());
+
     const isUUID = (str: string) => {
-        const regexExp = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi;
+        const regexExp = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/i;
         return regexExp.test(str);
     };
 
@@ -28,8 +29,9 @@ export default function Navbar() {
             let hasNew = false;
 
             for (const segment of segments) {
-                if (isUUID(segment) && !dynamicLabels[segment]) {
-                    // ลองค้นหาในตาราง classrooms ก่อน
+                if (isUUID(segment) && !fetchedIds.current.has(segment)) {
+                    fetchedIds.current.add(segment); // mark ว่า fetch แล้ว ป้องกัน duplicate request
+
                     const { data: classData } = await supabase
                         .from('classrooms')
                         .select('name')
@@ -40,7 +42,6 @@ export default function Navbar() {
                         newLabels[segment] = classData.name;
                         hasNew = true;
                     } else {
-                        // ถ้าไม่เจอใน classrooms ลองค้นหาในตาราง assignments
                         const { data: assignmentData } = await supabase
                             .from('assignments')
                             .select('title')
@@ -61,7 +62,7 @@ export default function Navbar() {
         };
 
         fetchDynamicNames();
-    }, [segments, dynamicLabels]);
+    }, [pathname]); // fetch ใหม่เมื่อเปลี่ยนหน้าเท่านั้น
 
 
     const labels: { [key: string]: string } = {
@@ -77,23 +78,25 @@ export default function Navbar() {
         'calendar': 'ปฏิทิน',
         'settings': 'ตั้งค่า',
         'dashboard': 'หน้าหลัก',
-        ...dynamicLabels // รวมชื่อชั้นเรียนจากฐานข้อมูลเข้าไปใน map
+        ...dynamicLabels
     };
 
     return (
         <>
             <nav className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
                 <div className="flex items-center text-md font-medium truncate max-w-xl text-gray-600">
-                    {segments.map((segment, index) => (
-                        <React.Fragment key={index}>
-                            <span className={index === segments.length - 1 ? "text-blue-600" : ""}>
-                                {labels[segment] || segment}
-                            </span>
-                            {index < segments.length - 1 && (
-                                <span className="mx-2 text-gray-400"><ChevronRight /></span>
-                            )}
-                        </React.Fragment>
-                    ))}
+                    {segments
+                        .filter(segment => !isUUID(segment) || labels[segment]) // ซ่อน UUID ที่ยังไม่มีชื่อ
+                        .map((segment, index, filteredArr) => (
+                            <React.Fragment key={segment}>
+                                <span className={index === filteredArr.length - 1 ? "text-blue-600" : ""}>
+                                    {labels[segment] || segment}
+                                </span>
+                                {index < filteredArr.length - 1 && (
+                                    <span className="mx-2 text-gray-400"><ChevronRight /></span>
+                                )}
+                            </React.Fragment>
+                        ))}
                 </div>
 
                 <div className="flex items-center space-x-4">
